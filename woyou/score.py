@@ -223,6 +223,6 @@ def blend(dim_keys) -> dict:
     mixed = tuple(round(sum(c[i] for c in rgbs) / len(rgbs)) for i in range(3))
     name, _, line = nearest_named(mixed)
     ranked = sorted(keys, key=lambda k: _dist2(mixed, hex_to_rgb(DYE_OF[k][1])))
-    dominant = [(LABEL_OF[k], DYE_OF[k][0]) for k in ranked[:3]]
+    dominant = [(LABEL_OF[k], DYE_OF[k][0]) for k in ranked]
     return {"hex": rgb_to_hex(mixed), "name": name, "line": line,
             "dominant": dominant}

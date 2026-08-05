@@ -132,7 +132,7 @@ class TestOfflineReport(unittest.TestCase):
         self.assertIn("走过 ", self.text)
         self.assertIn("遇见 ", self.text)
         self.assertIn("住宿 ", self.text)
-        self.assertIn("的车票根", self.text)
+        self.assertIn("的车票与门票", self.text)
         # 单城旅程不加城市链
         self.assertNotIn("⇢", self.text)
 
@@ -205,7 +205,7 @@ class TestNotes(unittest.TestCase):
         t.cmd("photo")
         text = report.make_report(t.state, t.pack)["text"]
         self.assertNotIn("🗨", text)
-        self.assertIn("玩家自语：一条也没有", text)
+        self.assertIn("玩家自语：无", text)
 
 
 class TestWishes(unittest.TestCase):

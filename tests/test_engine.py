@@ -682,8 +682,7 @@ class TestScore(unittest.TestCase):
         a, b = score.blend(keys), score.blend(keys)
         self.assertEqual(a, b)
         self.assertEqual(a, score.blend(list(reversed(keys))))
-        self.assertLessEqual(len(a["dominant"]), 3)
-        self.assertEqual(len(a["dominant"]), 3)
+        self.assertEqual(len(a["dominant"]), 4)
         for label, dye in a["dominant"]:
             self.assertIn(label, score.LABEL_OF.values())
             self.assertTrue(dye)
@@ -712,7 +711,7 @@ class TestScore(unittest.TestCase):
             c = score.blend(keys[:n])
             self.assert_hex(c["hex"])
             self.assertTrue(c["name"] and c["line"])
-            self.assertLessEqual(len(c["dominant"]), 3)
+            self.assertEqual(len(c["dominant"]), n)
 
 
 if __name__ == "__main__":

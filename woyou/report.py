@@ -82,12 +82,16 @@ OBSERVE_SYSTEM = """你在为一份旅行报告写「观察」一段。材料是
 硬规则（逐条遵守）：
 1) 分行诗体：一行一个念头，行尾不加句号，节与节之间空一行，总共 4-7 节、不超过 28 行。
 2) 三禁：
-   禁心理断言——不写「懂了」「爱上了」「学会了」这类替人认定的内心变化；
+   禁心理断言——不写「懂了」「爱上了」「学会了」「你发现」「你感到」「你明白」
+   「你意识到」这类替人认定的内心变化，只写眼耳鼻舌身能接收到的；
    禁替玩家下判断——不写「排对了」「值得了」「不虚此行」这类结论；
    禁编造——事实清单里没有的地点、人、话、事，一个字也不许添。
 3) 玩家自语：清单里每一条自语都必须以「你说，」引出并逐字引用——不改字、不润色、
    不省略任何一条，每条恰好出现一次。
 4) 没有自语就一个字也不提自语。
+5) 视角：你是一架不带感情的摄影机。只拍到的才写，拍不到的（内心活动、
+   价值判断、因果归纳）一律不写。「你走过」「你停下」可以，
+   「你领悟」「你被打动」不行。
 
 只输出这一段本身，不要标题，不要解释，不要 Markdown 标记。"""
 
@@ -180,7 +184,7 @@ def _days_lived(state) -> int:
 def _footprints(state) -> dict:
     """{day: [地点名, ...]}——当天到过的地点顺序（log 为主，日记补全旧日子）。
 
-    sleep 那条不算：夜里被送回旅舍不是「去过」，不然每天的链头都是落脚点。
+    sleep 的 STATE 显示的是新一天的起始位置，记录为次日链头。
     """
     order = {}
     for e in state.log:
@@ -188,11 +192,14 @@ def _footprints(state) -> dict:
         if day is None:
             continue
         head = (e.get("cmd") or "").split(None, 1)[0].casefold() if e.get("cmd") else ""
-        if head in SLEEP_WORDS:
-            continue
         s = _log_state(e)
         loc = (s or {}).get("loc")
         if not loc:
+            continue
+        if head in SLEEP_WORDS:
+            lst = order.setdefault(day, [])
+            if loc not in lst:
+                lst.insert(0, loc)
             continue
         lst = order.setdefault(day, [])
         if loc not in lst:
@@ -208,12 +215,18 @@ def _footprints(state) -> dict:
 
 
 def _footprint_lines(footprints: dict) -> dict:
-    """把足迹链渲染成每天一行，跨天重访标注（又去了一次）。"""
+    """把足迹链渲染成每天一行，跨天重访标注（又去了一次）。
+
+    每天第一个位置是起床/出发点，不标「又去了一次」。
+    """
     lines, seen = {}, set()
     for day in sorted(footprints):
         parts = []
-        for name in footprints[day]:
-            parts.append(f"{name}（又去了一次）" if name in seen else name)
+        for i, name in enumerate(footprints[day]):
+            if i > 0 and name in seen:
+                parts.append(f"{name}（又去了一次）")
+            else:
+                parts.append(name)
         for name in footprints[day]:
             seen.add(name)
         lines[day] = " → ".join(parts)
@@ -223,8 +236,8 @@ def _footprint_lines(footprints: dict) -> dict:
 def _revisits(footprints: dict) -> list:
     out, seen = [], set()
     for day in sorted(footprints):
-        for name in footprints[day]:
-            if name in seen:
+        for i, name in enumerate(footprints[day]):
+            if i > 0 and name in seen:
                 out.append((day, name))
         seen.update(footprints[day])
     return out
@@ -383,7 +396,7 @@ def _opening(state, pack, f) -> str:
     sp = f["spend"]
     sym = sp["symbol"]
     lines.append(f"住宿 {fmt_money(sym, sp['hotel'])}，吃 {fmt_money(sym, sp['food'])}")
-    tail = fmt_money(sym, sp["tickets"]) + " 的车票根"
+    tail = fmt_money(sym, sp["tickets"]) + " 的车票与门票"
     if sp["gifts"]:
         lines.append(f"剩下的，变成了{'、'.join(sp['gifts'])}和 {tail}")
     else:
@@ -435,7 +448,7 @@ def _facts_digest(state, pack, f) -> str:
         for i, n in enumerate(f["notes"], 1):
             L.append(f"  {i}. {n['text']}")
     else:
-        L.append("玩家自语：一条也没有（那就一个字也别提自语）")
+        L.append("玩家自语：无")
 
     L.append("")
     if state.wishes:
@@ -817,14 +830,24 @@ def _develop_block(state, pack):
     line = str(color.get("line") or "").strip()
     if line:
         lines.append(line)
-    doms = []
-    for d in (color.get("dominant") or [])[:3]:
-        if isinstance(d, (list, tuple)) and len(d) >= 2:
-            doms.append(f"{d[0]}的{d[1]}")
-        elif isinstance(d, dict):
-            doms.append(f"{d.get('label', '')}的{d.get('dye', d.get('name', ''))}")
-    if doms:
-        lines.append("——" + "、".join(doms) + "，把它染成了这样")
+    all_doms = color.get("dominant") or []
+    if len(all_doms) <= 4:
+        doms = []
+        for d in all_doms:
+            if isinstance(d, (list, tuple)) and len(d) >= 2:
+                doms.append(f"{d[0]}的{d[1]}")
+            elif isinstance(d, dict):
+                doms.append(f"{d.get('label', '')}的{d.get('dye', d.get('name', ''))}")
+        if doms:
+            lines.append("——" + "、".join(doms) + "，把它染成了这样")
+    elif all_doms:
+        dye_names = []
+        for d in all_doms:
+            if isinstance(d, (list, tuple)) and len(d) >= 2:
+                dye_names.append(d[1])
+            elif isinstance(d, dict):
+                dye_names.append(d.get("dye", d.get("name", "")))
+        lines.append("——" + "、".join(dye_names) + "，把它染成了这样")
     return "\n".join(lines), color, mod, result
 
 
