@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>卧游 · 观战</title>
+<style>
+  :root {
+    --paper: #f5f0e4; --paper2: #efe8d8; --ink: #2c261d; --ink2: #6b6152;
+    --line: #d8cfba; --accent: #b3432b; --gold: #9a7b2d; --green: #4a6b4f;
+    --note: #fbf3c9; --card: #fbf8ef;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    background-image: radial-gradient(circle at 20% 10%, #fff8 0, transparent 40%),
+                      radial-gradient(circle at 90% 80%, #e8dfc888 0, transparent 50%);
+    color: var(--ink);
+    font-family: "Source Han Serif SC", "Noto Serif SC", "STSong", "SimSun", serif;
+    min-height: 100vh;
+  }
+  header {
+    padding: 18px 26px 14px;
+    border-bottom: 2px solid var(--ink);
+    display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap;
+  }
+  .brand { font-size: 26px; letter-spacing: 8px; font-weight: 700; }
+  .brand small { font-size: 12px; letter-spacing: 2px; color: var(--ink2); margin-left: 6px; }
+  .where { font-size: 16px; color: var(--ink2); }
+  .where b { color: var(--accent); font-size: 19px; margin-right: 6px; }
+  .chips { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid var(--line); background: var(--card); border-radius: 3px;
+    padding: 4px 10px; font-size: 13px; color: var(--ink2); white-space: nowrap;
+  }
+  .chip b { color: var(--ink); font-size: 14px; }
+  .bar { display: inline-block; width: 54px; height: 7px; background: var(--paper2);
+         border: 1px solid var(--line); vertical-align: middle; margin-left: 5px; }
+  .bar i { display: block; height: 100%; background: var(--green); }
+  .bar.mood i { background: var(--gold); }
+  main {
+    display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+    gap: 22px; padding: 22px 26px; max-width: 1280px; margin: 0 auto;
+  }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  h2 {
+    font-size: 14px; letter-spacing: 4px; color: var(--ink2); font-weight: 600;
+    border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 12px;
+  }
+  #stream { display: flex; flex-direction: column; gap: 14px;
+            max-height: calc(100vh - 190px); overflow-y: auto; padding-right: 8px; }
+  .turn { border-left: 3px solid var(--line); padding: 2px 0 2px 14px; }
+  .turn .meta { font-size: 12px; color: var(--ink2); margin-bottom: 5px; letter-spacing: 1px; }
+  .turn .meta .cmd {
+    font-family: Consolas, monospace; background: var(--paper2); color: var(--ink);
+    padding: 1px 7px; border-radius: 3px; border: 1px solid var(--line); margin-left: 6px;
+  }
+  .turn .text { font-size: 15px; line-height: 1.85; white-space: pre-wrap; }
+  .turn .text .sys { color: var(--ink2); font-size: 13px; }
+  .bubble {
+    position: relative; align-self: flex-end; max-width: 78%;
+    background: var(--note); border: 1px solid #e3d48f; border-radius: 10px 10px 2px 10px;
+    padding: 8px 14px; font-size: 14px; line-height: 1.7;
+    font-family: "KaiTi", "STKaiti", "Source Han Serif SC", serif;
+    color: #5c4d1a; transform: rotate(-0.6deg);
+    box-shadow: 2px 3px 0 #0001; margin: -4px 6px 2px 0;
+  }
+  .bubble::before { content: "🗨 旅人自语"; display: block; font-size: 10px;
+                    letter-spacing: 2px; color: #a08c3a; margin-bottom: 3px; }
+  aside section {
+    background: var(--card); border: 1px solid var(--line); border-radius: 4px;
+    padding: 14px 16px; margin-bottom: 18px;
+    box-shadow: 3px 4px 0 #00000008;
+  }
+  .loc { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; font-size: 14px; }
+  .loc .t { font-size: 11px; color: var(--ink2); border: 1px solid var(--line);
+            padding: 0 5px; border-radius: 2px; white-space: nowrap; }
+  .loc.here { color: var(--accent); font-weight: 700; }
+  .loc.here::before { content: "📍"; }
+  .loc.hidden .t { color: var(--gold); border-color: var(--gold); }
+  .dist { font-size: 12px; letter-spacing: 3px; color: var(--ink2); margin: 8px 0 3px; }
+  .wish { font-size: 14px; padding: 3px 0; color: var(--ink2); }
+  .wish.done { color: var(--green); }
+  .wish.done::before { content: "✔ "; }
+  .wish:not(.done)::before { content: "◻ "; color: var(--line); }
+  .entry { padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .entry:last-child { border-bottom: 0; }
+  .entry .tt { font-weight: 700; font-size: 14px; }
+  .entry .mm { color: var(--ink2); font-size: 12px; }
+  #scorebox { border: 2px solid var(--accent); background: #fff6f0; }
+  #scorebox .total { font-size: 30px; color: var(--accent); font-weight: 700; }
+  .empty { padding: 60px; text-align: center; color: var(--ink2); font-size: 16px;
+           line-height: 2.2; }
+  .route { font-size: 12px; color: var(--ink2); letter-spacing: 1px; }
+
+  /* 旅行报告 */
+  .rpt-controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .rpt-photos { display: flex; gap: 14px; font-size: 13px; color: var(--ink2); }
+  .rpt-photos label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .rpt-observe-row { font-size: 13px; color: var(--ink2); display: flex; align-items: center;
+                      gap: 6px; cursor: pointer; }
+  .rpt-observe-row input:disabled { cursor: not-allowed; }
+  .rpt-observe-row small { color: var(--gold); font-size: 11px; }
+  #rpt-btn {
+    font-family: inherit; font-size: 13px; letter-spacing: 3px; padding: 7px 16px;
+    background: var(--card); border: 1px solid var(--ink); color: var(--ink);
+    border-radius: 3px; cursor: pointer; align-self: flex-start;
+  }
+  #rpt-btn:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #fff8ef; }
+  #rpt-btn:disabled { opacity: .55; cursor: default; }
+  #rpt-error { color: var(--accent); font-size: 13px; margin-top: 6px; line-height: 1.6; }
+  #rpt-color { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px;
+               font-size: 13px; flex-wrap: wrap; }
+  #rpt-color .swatch { width: 20px; height: 20px; border-radius: 3px; border: 1px solid var(--line);
+                        display: inline-block; align-self: center; flex-shrink: 0; }
+  #rpt-color .cname { font-weight: 700; }
+  #rpt-color .cline { color: var(--ink2); }
+  #rpt-text {
+    font-family: Consolas, "Source Han Serif SC", "Noto Serif SC", serif;
+    font-size: 13px; line-height: 1.85; white-space: pre-wrap; word-break: break-word;
+    max-height: 60vh; overflow-y: auto; background: var(--paper2); border: 1px solid var(--line);
+    border-radius: 3px; padding: 12px 14px;
+  }
+  #rpt-photos-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; }
+  .polaroid { background: #fff; padding: 8px 8px 22px; border: 1px solid #ddd2ba;
+              box-shadow: 2px 3px 6px #00000022; width: 116px; transform: rotate(-1.5deg); }
+  .polaroid:nth-child(even) { transform: rotate(1.4deg); }
+  .polaroid img { width: 100%; height: 104px; object-fit: cover; display: block; background: var(--paper2); }
+  .polaroid .cap { font-size: 10px; text-align: center; margin-top: 6px; color: var(--ink2);
+                    font-family: "KaiTi", "STKaiti", serif; }
+  #rpt-saved { font-size: 11px; color: var(--ink2); margin-top: 12px; }
+  footer#keyfoot {
+    max-width: 1280px; margin: 0 auto; padding: 10px 26px 30px; display: flex;
+    align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--ink2);
+  }
+  footer#keyfoot input[type="password"] {
+    font-family: Consolas, monospace; font-size: 12px; padding: 4px 7px; border: 1px solid var(--line);
+    border-radius: 3px; background: var(--card); color: var(--ink); width: 230px;
+  }
+  footer#keyfoot button {
+    font-size: 12px; padding: 4px 12px; border: 1px solid var(--ink); background: var(--card);
+    color: var(--ink); border-radius: 3px; cursor: pointer;
+  }
+  footer#keyfoot button:hover { background: var(--accent); border-color: var(--accent); color: #fff8ef; }
+  footer#keyfoot a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  #key-msg { font-size: 11px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">卧游<small>WOYOU · 观战</small></div>
+  <div class="where" id="where">—</div>
+  <div class="chips" id="chips"></div>
+</header>
+<main id="main" style="display:none">
+  <section>
+    <h2>旅 途</h2>
+    <div id="stream"></div>
+  </section>
+  <aside>
+    <section id="scorebox" style="display:none">
+      <h2>旅程结算</h2>
+      <div class="total" id="score-total"></div>
+      <div id="score-grade" style="margin-top:4px"></div>
+    </section>
+    <section>
+      <h2>手绘地图</h2>
+      <div id="map"></div>
+    </section>
+    <section>
+      <h2>心愿单</h2>
+      <div id="wishes"></div>
+    </section>
+    <section>
+      <h2>日记本 <span id="jcount" style="letter-spacing:0"></span></h2>
+      <div id="journal" style="max-height:300px;overflow-y:auto"></div>
+    </section>
+    <section id="reportbox">
+      <h2>旅行报告</h2>
+      <div class="rpt-controls">
+        <div class="rpt-photos">
+          <label><input type="radio" name="rpt-photos" value="text" checked> 文字</label>
+          <label><input type="radio" name="rpt-photos" value="real"> 照片</label>
+          <label><input type="radio" name="rpt-photos" value="both"> 都要</label>
+        </div>
+        <label class="rpt-observe-row">
+          <input type="checkbox" id="rpt-observe" disabled> 生成观察句
+          <small id="rpt-observe-hint">先配置 API key</small>
+        </label>
+        <button id="rpt-btn" onclick="genReport()">生成旅行报告</button>
+      </div>
+      <div id="rpt-error" style="display:none"></div>
+      <div id="rpt-result" style="display:none">
+        <div id="rpt-color"></div>
+        <pre id="rpt-text"></pre>
+        <div id="rpt-photos-grid"></div>
+        <div id="rpt-saved"></div>
+      </div>
+    </section>
+  </aside>
+</main>
+<div class="empty" id="empty" style="display:none">
+  还没有进行中的旅程。<br>
+  在终端里 <code>uv run play.py demo</code> 或 <code>new --city 京都</code> 开始一段吧。
+</div>
+<footer id="keyfoot">
+  <span>🔑</span>
+  <span id="key-status" style="display:none"></span>
+  <a href="javascript:void(0)" id="key-change-link" style="display:none" onclick="expandKeyEdit()">更换</a>
+  <span id="key-editrow">
+    <input type="password" id="key-input" placeholder="DeepSeek API key（sk-...）">
+    <button onclick="saveKey()">保存</button>
+  </span>
+  <span id="key-msg"></span>
+</footer>
+<script>
+const TYPE_MARK = {"风景":"🏞","风味":"🍜","人物":"👤","故事":"📜","意外":"✨","心愿":"🎐","纪念":"🎁"};
+let lastPayload = "";
+let hasKey = false;
+let keyEditing = false;
+let lastMasked = "";
+let reportBusy = false;
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+// ---------------------------------------------------------------- key 设置（页脚）
+function updateKeyFooter() {
+  const statusEl = document.getElementById("key-status");
+  const editRow = document.getElementById("key-editrow");
+  const changeLink = document.getElementById("key-change-link");
+  const observeBox = document.getElementById("rpt-observe");
+  const observeHint = document.getElementById("rpt-observe-hint");
+  if (keyEditing || !hasKey) {
+    editRow.style.display = "";
+    statusEl.style.display = "none";
+    changeLink.style.display = "none";
+  } else {
+    statusEl.textContent = lastMasked || "已配置";
+    statusEl.style.display = "";
+    editRow.style.display = "none";
+    changeLink.style.display = "";
+  }
+  observeBox.disabled = !hasKey;
+  observeHint.style.display = hasKey ? "none" : "";
+  if (!hasKey) observeBox.checked = false;
+}
+
+function expandKeyEdit() {
+  keyEditing = true;
+  updateKeyFooter();
+  document.getElementById("key-input").focus();
+}
+
+async function saveKey() {
+  const input = document.getElementById("key-input");
+  const msg = document.getElementById("key-msg");
+  const key = input.value.trim();
+  if (!key) { msg.textContent = "请输入 key"; return; }
+  msg.textContent = "保存中…";
+  try {
+    const r = await fetch("/config", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({key}),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      lastMasked = d.masked || "";
+      hasKey = true;
+      keyEditing = false;
+      input.value = "";
+      msg.textContent = "已保存 " + lastMasked;
+      updateKeyFooter();
+    } else {
+      msg.textContent = "保存失败：" + (d.error || "未知错误");
+    }
+  } catch (e) {
+    msg.textContent = "保存失败：" + e;
+  }
+}
+
+// ---------------------------------------------------------------- 旅行报告
+function photoSrc(p) {
+  if (typeof p === "string") return "/photos/" + p.replace(/^\/+/, "");
+  if (p && typeof p === "object") {
+    if (p.src) return p.src;
+    if (p.url) return p.url;
+    if (p.path) return "/photos/" + String(p.path).replace(/^\/+/, "");
+    if (p.slug && (p.file || p.filename)) return `/photos/${p.slug}/${p.file || p.filename}`;
+  }
+  return null;
+}
+
+function photoCaption(p) {
+  if (p && typeof p === "object") return p.caption || p.title || p.alt || "";
+  return "";
+}
+
+function showReportError(msg) {
+  const el = document.getElementById("rpt-error");
+  el.textContent = msg;
+  el.style.display = "";
+}
+
+function renderReport(d) {
+  document.getElementById("rpt-error").style.display = "none";
+  const meta = d.meta || {};
+  document.getElementById("rpt-result").style.display = "";
+
+  const colorBox = document.getElementById("rpt-color");
+  if (meta.color && meta.color.hex) {
+    colorBox.style.display = "";
+    colorBox.innerHTML =
+      `<span class="swatch" style="background:${esc(meta.color.hex)}"></span>` +
+      `<span class="cname">${esc(meta.color.name || "")}</span>` +
+      `<span class="cline">${esc(meta.color.line || "")}</span>`;
+  } else {
+    colorBox.style.display = "none";
+  }
+
+  document.getElementById("rpt-text").textContent = d.text || "";
+
+  const items = meta.photos || [];
+  document.getElementById("rpt-photos-grid").innerHTML = items.map(p => {
+    const src = photoSrc(p);
+    if (!src) return "";
+    const cap = photoCaption(p);
+    return `<div class="polaroid"><img src="${esc(src)}" alt="${esc(cap)}" loading="lazy">` +
+           `<div class="cap">${esc(cap)}</div></div>`;
+  }).join("");
+
+  document.getElementById("rpt-saved").textContent = d.path ? `已自动保存 → ${d.path}` : "";
+}
+
+async function genReport() {
+  if (reportBusy) return;
+  reportBusy = true;
+  const btn = document.getElementById("rpt-btn");
+  const oldText = btn.textContent;
+  btn.textContent = "显影中…";
+  btn.disabled = true;
+  document.getElementById("rpt-error").style.display = "none";
+  const photosEl = document.querySelector('input[name="rpt-photos"]:checked');
+  const photos = photosEl ? photosEl.value : "text";
+  const observe = document.getElementById("rpt-observe").checked && hasKey;
+  try {
+    const r = await fetch("/report", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({observe, photos}),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      renderReport(d);
+    } else {
+      showReportError(d.error || "生成失败");
+    }
+  } catch (e) {
+    showReportError(String(e));
+  } finally {
+    reportBusy = false;
+    btn.textContent = oldText;
+    btn.disabled = false;
+  }
+}
+
+function renderText(t) {
+  return esc(t).split("\n").map(ln => {
+    if (/^(💴|✎|✦|◉|🎐|📍)/.test(ln)) return `<span class="sys">${ln}</span>`;
+    return ln;
+  }).join("\n");
+}
+
+async function tick() {
+  let data;
+  try {
+    const r = await fetch("/data", {cache: "no-store"});
+    data = await r.json();
+  } catch (e) { return; }
+  const payload = JSON.stringify(data);
+  if (payload === lastPayload) return;
+  lastPayload = payload;
+
+  hasKey = !!data.has_key;
+  updateKeyFooter();
+
+  if (data.empty) {
+    document.getElementById("main").style.display = "none";
+    document.getElementById("empty").style.display = "block";
+    return;
+  }
+  document.getElementById("main").style.display = "";
+  document.getElementById("empty").style.display = "none";
+
+  const route = (data.route || []).join(" → ");
+  document.getElementById("where").innerHTML =
+    `<b>${esc(data.city)}</b>${esc(data.country)} · 第${data.day}/${data.days_total}天 · ${esc(data.slot)} · ${esc(data.weather)}` +
+    (data.mate ? ` · 与${esc(data.mate)}同行` : " · 独行") +
+    (route && data.route.length > 1 ? `<div class="route">足迹：${esc(route)}</div>` : "");
+
+  document.getElementById("chips").innerHTML = `
+    <span class="chip">💴 <b>${esc(data.cur)}${Number(data.money).toLocaleString()}</b></span>
+    <span class="chip">体力<span class="bar"><i style="width:${data.energy}%"></i></span></span>
+    <span class="chip">📜 故事 <b>${data.stories}</b></span>
+    <span class="chip">◉ 隐藏 <b>${data.gems}</b></span>`;
+
+  const stream = document.getElementById("stream");
+  const nearBottom = stream.scrollHeight - stream.scrollTop - stream.clientHeight < 80;
+  stream.innerHTML = (data.log || []).map(e => {
+    let html = `<div class="turn">
+      <div class="meta">第${e.day}天 · ${esc(e.slot)}<span class="cmd">${esc(e.cmd)}</span></div>
+      <div class="text">${renderText(e.text)}</div></div>`;
+    if (e.note) html += `<div class="bubble">${esc(e.note)}</div>`;
+    return html;
+  }).join("");
+  if (nearBottom) stream.scrollTop = stream.scrollHeight;
+
+  document.getElementById("map").innerHTML = (data.map || []).map(d =>
+    `<div class="dist">— ${esc(d.district)} —</div>` +
+    d.locs.map(l =>
+      `<div class="loc ${l.here ? "here" : ""} ${l.hidden ? "hidden" : ""}">
+         <span>${esc(l.name)}</span><span class="t">${esc(l.type)}${l.hidden ? "·深巷" : ""}</span>
+       </div>`).join("")
+  ).join("");
+
+  document.getElementById("wishes").innerHTML = (data.wishes || []).map(w =>
+    `<div class="wish ${w.done ? "done" : ""}">${esc(w.text)}</div>`).join("");
+
+  const js = data.journal || [];
+  document.getElementById("jcount").textContent = `（${js.length}）`;
+  document.getElementById("journal").innerHTML = js.slice().reverse().map(e =>
+    `<div class="entry">
+       <div class="tt">${TYPE_MARK[e.type] || "·"} ${esc(e.title)}</div>
+       <div class="mm">第${e.day}天 · ${esc(e.slot)}${e.loc ? " · " + esc(e.loc) : ""}</div>
+     </div>`).join("");
+
+  const sb = document.getElementById("scorebox");
+  if (data.ended && data.score && data.score.total != null) {
+    sb.style.display = "";
+    document.getElementById("score-total").textContent = "回味值 " + data.score.total;
+    document.getElementById("score-grade").textContent = data.score.grade || "";
+  } else {
+    sb.style.display = "none";
+  }
+}
+updateKeyFooter();
+tick();
+setInterval(tick, 2000);
+</script>
+</body>
+</html>

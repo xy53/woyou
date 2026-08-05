@@ -1,0 +1,134 @@
+{
+  "sanjo": {
+    "file": "sanjo.jpg",
+    "title": "三条寺町商店街",
+    "author": "Celuici",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Teramachi_shopping_street,_Kyoto,_May_2017.jpg",
+    "scene_note": "掌灯时分的拱廊内景，顶棚灯带全亮，行人推着自行车缓行，两侧招牌层叠",
+    "compatible_slots": ["黄昏", "夜晚"],
+    "weather_hint": null,
+    "season_months": null
+  },
+  "nishiki": {
+    "file": "nishiki.jpg",
+    "title": "锦市场",
+    "author": "collinox",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tsukemono_shop_by_collinox_in_Nishiki_Ichiba,_Kyoto.jpg",
+    "scene_note": "天棚灯下一长排腌菜木桶敞着口，黄色价签插在菜堆上",
+    "compatible_slots": ["上午", "午后"],
+    "weather_hint": null,
+    "season_months": null
+  },
+  "kamogawa": {
+    "file": "kamogawa.jpg",
+    "title": "鸭川河岸",
+    "author": "Hyppolyte de Saint-Rambert",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Kamo-gawa_in_Kyoto_hdsr_S5_01.jpg",
+    "scene_note": "浅滩上二十来只白鹭各自站着，两岸芦苇枯成金黄，天色是阴的",
+    "compatible_slots": ["清晨", "上午", "午后"],
+    "weather_hint": null,
+    "season_months": [11, 2]
+  },
+  "pontocho": {
+    "file": "pontocho.jpg",
+    "title": "先斗町",
+    "author": "shermain",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Kushi-yaki_restaurant_by_shermain_in_Pontocho,_Kyoto.jpg",
+    "scene_note": "红白提灯和「鸭川纳凉床」大灯笼都亮着，绳暖帘垂在黑木门前",
+    "compatible_slots": ["黄昏", "夜晚"],
+    "weather_hint": null,
+    "season_months": [5, 9]
+  },
+  "rokuyosha": {
+    "file": "rokuyosha.jpg",
+    "title": "六曜社珈琲店",
+    "author": "舌先現象になります",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Rokuyousha_Chikaten.jpg",
+    "scene_note": "地下店的街面门脸：木招牌、营业时间板，楼梯从左边往下拐进去",
+    "compatible_slots": ["清晨", "上午", "午后"],
+    "weather_hint": null,
+    "season_months": null
+  },
+  "kiyomizu": {
+    "file": "kiyomizu.jpg",
+    "title": "清水寺",
+    "author": "Martin Falbisoner",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Kiyomizu-dera,_Kyoto,_November_2016_-01.jpg",
+    "scene_note": "满山红枫里的清水舞台，悬柱托着大殿，远处是京都盆地和塔尖",
+    "compatible_slots": ["上午", "午后"],
+    "weather_hint": "晴",
+    "season_months": [10, 11]
+  },
+  "ninenzaka": {
+    "file": "ninenzaka.jpg",
+    "title": "二年坂·三年坂",
+    "author": "Andrea Schaffer",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Sannenzaka_street,_Kyoto_(3811257874).jpg",
+    "scene_note": "石板坂道向坡顶收去，两侧町家屋檐相接，几个游客正走上坡",
+    "compatible_slots": ["上午", "午后"],
+    "weather_hint": null,
+    "season_months": null
+  },
+  "gion": {
+    "file": "gion.jpg",
+    "title": "祇园·花见小路",
+    "author": "lumoplank",
+    "license": "CC0 1.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Streets_of_Gion,_Kyoto_-_Gion7712.jpg",
+    "scene_note": "无人的木格窗窄巷，斜阳把巷底那面土黄墙照成暖色，天很蓝",
+    "compatible_slots": ["午后", "黄昏"],
+    "weather_hint": "晴",
+    "season_months": null
+  },
+  "tetsugaku": {
+    "file": "tetsugaku.jpg",
+    "title": "哲学之道",
+    "author": "Reggaeman",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tetsugaku_no_Michi_01.JPG",
+    "scene_note": "水渠两侧樱花开满，石径上人流缓缓走着，水面浮着花影",
+    "compatible_slots": ["上午", "午后"],
+    "weather_hint": null,
+    "season_months": [3, 4]
+  },
+  "kinkakuji": {
+    "file": "kinkakuji.jpg",
+    "title": "金阁寺",
+    "author": "Nacaru",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Golden_Pavilion_Kinkaku-ji_2024.jpg",
+    "scene_note": "金阁隔池立在常绿山坡前，池面只露出右下一角，天上有云",
+    "compatible_slots": ["上午", "午后"],
+    "weather_hint": "晴",
+    "season_months": null
+  },
+  "shimogamo": {
+    "file": "shimogamo.jpg",
+    "title": "下鸭神社·糺之森",
+    "author": "Mochi（日语维基）",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tadasu-no-Mori.jpg",
+    "scene_note": "碎石参道笔直穿过绿荫，几个戴帽的行人走在斑驳的光里",
+    "compatible_slots": ["上午", "午后"],
+    "weather_hint": "晴",
+    "season_months": [4, 11]
+  },
+  "ichijoji": {
+    "file": "ichijoji.jpg",
+    "title": "一乘寺·惠文社",
+    "author": "Yuco",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Keibunsha_Ichijoji,_Kyoto_-_Mar_15,_2008.jpg",
+    "scene_note": "夜里的惠文社：橱窗透出暖黄的书架灯，门口停着摩托与自行车",
+    "compatible_slots": ["夜晚"],
+    "weather_hint": null,
+    "season_months": null
+  }
+}

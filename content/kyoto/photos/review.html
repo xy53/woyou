@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>京都内容包 · 照片候选审片廊</title>
+<style>
+  :root {
+    --bg: #faf8f4;
+    --card-bg: #ffffff;
+    --text: #2b2620;
+    --muted: #77706a;
+    --accent: #a8452f;
+    --border: #e7e1d8;
+    --tag-bg: #f1ece2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1a17;
+      --card-bg: #262320;
+      --text: #ece7de;
+      --muted: #a39a8f;
+      --accent: #e08a6b;
+      --border: #3a352e;
+      --tag-bg: #322d26;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 0 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  header.page {
+    padding: 2rem 1.5rem 1.5rem;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 0.4rem; }
+  .subtitle { color: var(--muted); font-size: 0.92rem; margin: 0 0 1rem; }
+  .notice {
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.88rem;
+    color: var(--text);
+  }
+  .notice strong { color: var(--accent); }
+  nav.toc {
+    max-width: 980px;
+    margin: 1.2rem auto 0;
+    padding: 0 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  nav.toc a {
+    color: var(--text);
+    text-decoration: none;
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+  }
+  nav.toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+  main { max-width: 980px; margin: 0 auto; padding: 0 1.5rem; }
+
+  section.loc {
+    margin-top: 2.6rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--border);
+  }
+  section.loc h2 {
+    font-size: 1.2rem;
+    margin: 0 0 0.15rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  section.loc h2 .id-tag {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--muted);
+    background: var(--tag-bg);
+    border-radius: 5px;
+    padding: 0.1rem 0.4rem;
+  }
+  section.loc .brief { color: var(--muted); font-size: 0.88rem; margin: 0 0 1rem; }
+  section.loc .count-tag {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  figure.card {
+    margin: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  figure.card .thumb-wrap {
+    background: var(--tag-bg);
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  figure.card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  figcaption { padding: 0.7rem 0.8rem 0.85rem; font-size: 0.83rem; }
+  .filename {
+    color: var(--muted);
+    font-size: 0.74rem;
+    word-break: break-word;
+    margin-bottom: 0.35rem;
+  }
+  .meta-line { margin-bottom: 0.3rem; }
+  .meta-line .k { color: var(--muted); }
+  .reason {
+    color: var(--accent);
+    font-size: 0.85rem;
+    margin: 0.4rem 0 0.55rem;
+  }
+  .card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
+  }
+  .card-foot a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.8rem;
+  }
+  .card-foot a:hover { text-decoration: underline; }
+  .pick-mark {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    user-select: none;
+  }
+  .pick-mark input { width: 15px; height: 15px; accent-color: var(--accent); }
+
+  .empty-note {
+    padding: 1rem;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .single-note {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: -0.4rem 0 0.8rem;
+  }
+  footer.page {
+    max-width: 980px;
+    margin: 3rem auto 0;
+    padding: 1.2rem 1.5rem 0;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  figure.card.picked { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  figure.card.picked .pick-mark { color: var(--accent); font-weight: 600; }
+  #pickbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 9;
+    background: var(--card-bg); border-top: 1px solid var(--border);
+    padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 0.8rem;
+    flex-wrap: wrap; font-size: 0.88rem; box-shadow: 0 -2px 10px #00000014;
+  }
+  #pickbar .cnt b { color: var(--accent); font-size: 1.05rem; }
+  #pickbar button {
+    font: inherit; font-size: 0.85rem; padding: 0.35rem 0.9rem; cursor: pointer;
+    background: var(--tag-bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+  }
+  #pickbar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #pickbar .hint { color: var(--muted); font-size: 0.78rem; }
+  #picktext {
+    width: 100%; height: 7.5rem; font-family: Consolas, monospace; font-size: 0.78rem;
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.5rem; display: none;
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1>京都内容包 · Wikimedia Commons 照片候选审片廊</h1>
+  <p class="subtitle">12 个地点 · 33 张候选 · 生成于 2026-08-05 · 本页仅供人工过目，未落库、未改任何游戏代码</p>
+  <div class="notice">
+    <strong>提示：</strong>图片直链来自 Wikimedia Commons（<code>Special:FilePath</code> 缩略，width=640），如加载不出（部分网络环境屏蔽 wikimedia.org），可点每张卡片下方的「文件页」链接查看，或挂代理后刷新本页。<strong>每个地点选一张</strong>（同地点再选会自动换掉旧的；再点一次同一张=取消，该地点回落文字拍立得）。勾选自动保存在浏览器本地，刷新不丢；选完点底部「复制选择结果」，把文字贴给我即可落库。
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#sanjo">三条寺町商店街</a>
+  <a href="#nishiki">锦市场</a>
+  <a href="#kamogawa">鸭川河岸</a>
+  <a href="#pontocho">先斗町</a>
+  <a href="#rokuyosha">六曜社珈琲店</a>
+  <a href="#kiyomizu">清水寺</a>
+  <a href="#ninenzaka">二年坂·三年坂</a>
+  <a href="#gion">祇园·花见小路</a>
+  <a href="#tetsugaku">哲学之道</a>
+  <a href="#kinkakuji">金阁寺</a>
+  <a href="#shimogamo">下鸭神社·糺之森</a>
+  <a href="#ichijoji">一乘寺·惠文社</a>
+</nav>
+
+<main>
+
+<section class="loc" id="sanjo">
+  <h2>三条寺町商店街 <span class="id-tag">sanjo</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">带拱廊的老商店街，旅舍就在这一带</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Teramachi_Street_shopping_area_1.jpg?width=640" alt="Teramachi Street shopping area 1" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Teramachi Street shopping area 1.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Mx. Granger　<span class="k">许可：</span>CC0 1.0</div>
+        <div class="reason">拱廊内景，无人摆拍，CC0授权</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Teramachi_Street_shopping_area_1.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Teramachi-dori,_Kyoto_-_DSC05869.JPG?width=640" alt="Teramachi-dori, Kyoto - DSC05869" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Teramachi-dori, Kyoto - DSC05869.JPG</div>
+        <div class="meta-line"><span class="k">作者：</span>Daderot　<span class="k">许可：</span>CC0 1.0</div>
+        <div class="reason">街景纪实视角，光线自然</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Teramachi-dori,_Kyoto_-_DSC05869.JPG" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Teramachi_shopping_street,_Kyoto,_May_2017.jpg?width=640" alt="Teramachi shopping street, Kyoto, May 2017" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Teramachi shopping street, Kyoto, May 2017.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Celuici　<span class="k">许可：</span>CC BY-SA 3.0</div>
+        <div class="reason">夜晚拱廊灯光，可配夜间文案</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Teramachi_shopping_street,_Kyoto,_May_2017.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="nishiki">
+  <h2>锦市场 <span class="id-tag">nishiki</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">四百年的「京之台所」，一条390米的吃食长巷</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Tsukemono_shop_by_collinox_in_Nishiki_Ichiba,_Kyoto.jpg?width=640" alt="Tsukemono shop by collinox in Nishiki Ichiba, Kyoto" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Tsukemono shop by collinox in Nishiki Ichiba, Kyoto.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>collinox　<span class="k">许可：</span>CC BY 2.0</div>
+        <div class="reason">腌菜缸特写，正合「敞着口」描述</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Tsukemono_shop_by_collinox_in_Nishiki_Ichiba,_Kyoto.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nishiki_ichiba_Kyoto_JPN.jpg?width=640" alt="Nishiki ichiba Kyoto JPN" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Nishiki ichiba Kyoto JPN.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>ignis　<span class="k">许可：</span>CC BY-SA 3.0</div>
+        <div class="reason">长巷纵深，天棚光线均匀</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Nishiki_ichiba_Kyoto_JPN.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nishiki_Ichiba_by_Kazutaka_NAKANO_in_Kyoto.jpg?width=640" alt="Nishiki Ichiba by Kazutaka NAKANO in Kyoto" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Nishiki Ichiba by Kazutaka NAKANO in Kyoto.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Kazutaka NAKANO　<span class="k">许可：</span>CC BY 2.0</div>
+        <div class="reason">店铺日常一景，非游客摆拍</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Nishiki_Ichiba_by_Kazutaka_NAKANO_in_Kyoto.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="kamogawa">
+  <h2>鸭川河岸 <span class="id-tag">kamogawa</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">整座城的会客厅，京都人在这里晒太阳、发呆、恋爱</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Couples_sitting_by_the_Kamo_river_in_Kyoto.jpg?width=640" alt="Couples sitting by the Kamo river in Kyoto" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Couples sitting by the Kamo river in Kyoto.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Sgroey　<span class="k">许可：</span>CC BY-SA 4.0</div>
+        <div class="reason">河岸各自落座，正是「客厅」感</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Couples_sitting_by_the_Kamo_river_in_Kyoto.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Kamo-gawa_in_Kyoto_hdsr_S5_01.jpg?width=640" alt="Kamo-gawa in Kyoto hdsr S5 01 - little egret at the river dam" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Kamo-gawa in Kyoto hdsr S5 01.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Hyppolyte de Saint-Rambert　<span class="k">许可：</span>CC BY 4.0</div>
+        <div class="reason">白鹭立于浅滩，贴合文案描写</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Kamo-gawa_in_Kyoto_hdsr_S5_01.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Pedestrians_crossing_the_Kamo_River.jpg?width=640" alt="Pedestrians crossing the Kamo River" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Pedestrians crossing the Kamo River.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Grendelkhan　<span class="k">许可：</span>CC BY-SA 4.0</div>
+        <div class="reason">跳石过河的日常瞬间</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Pedestrians_crossing_the_Kamo_River.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="pontocho">
+  <h2>先斗町 <span class="id-tag">pontocho</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">一条仅容两人错身的花街窄巷，入夜才睁眼</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Pontocho_Alley,_Kyoto_(53589184823).jpg?width=640" alt="Pontocho Alley, Kyoto" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Pontocho Alley, Kyoto (53589184823).jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Sergiy Galyonkin　<span class="k">许可：</span>CC BY-SA 2.0</div>
+        <div class="reason">窄巷纵深加行人，日常感强</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Pontocho_Alley,_Kyoto_(53589184823).jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Pontocho_by_Wolfiewolf_in_Kashiwayacho,_Kyoto.jpg?width=640" alt="Pontocho by Wolfiewolf in Kashiwayacho, Kyoto" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Pontocho by Wolfiewolf in Kashiwayacho, Kyoto.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Wolfiewolf　<span class="k">许可：</span>CC BY 2.0</div>
+        <div class="reason">木格窗与灯笼，贴近街面视角</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Pontocho_by_Wolfiewolf_in_Kashiwayacho,_Kyoto.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Kushi-yaki_restaurant_by_shermain_in_Pontocho,_Kyoto.jpg?width=640" alt="Kushi-yaki restaurant by shermain in Pontocho, Kyoto" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Kushi-yaki restaurant by shermain in Pontocho, Kyoto.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>shermain　<span class="k">许可：</span>CC BY-SA 2.0</div>
+        <div class="reason">店门口的生活气息，非正面大片</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Kushi-yaki_restaurant_by_shermain_in_Pontocho,_Kyoto.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="rokuyosha">
+  <h2>六曜社珈琲店 <span class="id-tag">rokuyosha</span> <span class="count-tag">1 张候选</span></h2>
+  <p class="brief">1950年开业的地下老咖啡店，本地人的客厅</p>
+  <p class="single-note">这是小店，Commons 上只查到两张相关照片，其中一张 612×612px 低于分辨率门槛已剔除，故只剩下面这 1 张可用候选。</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Rokuyousha_Chikaten.jpg?width=640" alt="Rokuyousha Chikaten" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Rokuyousha Chikaten.jpg（六曜社地下店）</div>
+        <div class="meta-line"><span class="k">作者：</span>舌先現象になります　<span class="k">许可：</span>CC BY-SA 4.0</div>
+        <div class="reason">唯一满足分辨率的地下店实拍</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Rokuyousha_Chikaten.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="kiyomizu">
+  <h2>清水寺 <span class="id-tag">kiyomizu</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">悬在山腰的大舞台，京都最著名的一眼</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Kiyomizu-dera,_Kyoto,_November_2016_-01.jpg?width=640" alt="Kiyomizu-dera, Kyoto, November 2016" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Kiyomizu-dera, Kyoto, November 2016 -01.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Martin Falbisoner　<span class="k">许可：</span>CC BY-SA 4.0</div>
+        <div class="reason">舞台全景，木柱结构清楚可见</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Kiyomizu-dera,_Kyoto,_November_2016_-01.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Near_Kiyomizu-dera_May_06.JPG?width=640" alt="Near Kiyomizu-dera May 06" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Near Kiyomizu-dera May 06.JPG</div>
+        <div class="meta-line"><span class="k">作者：</span>Eckhard Pecher　<span class="k">许可：</span>CC BY-SA 2.5</div>
+        <div class="reason">寺周边山林景，非正殿摆拍大片</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Near_Kiyomizu-dera_May_06.JPG" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Kiyomizu-dera_-_August_2013_-_Sarah_Stierch_02.jpg?width=640" alt="Kiyomizu-dera - August 2013 - Sarah Stierch" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Kiyomizu-dera - August 2013 - Sarah Stierch 02.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Sarah Stierch　<span class="k">许可：</span>CC BY 4.0</div>
+        <div class="reason">纪实摄影师手法，少修饰感</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Kiyomizu-dera_-_August_2013_-_Sarah_Stierch_02.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="ninenzaka">
+  <h2>二年坂·三年坂 <span class="id-tag">ninenzaka</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">通往清水寺的石板坂道，町家茶屋一路排开</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Pedestrian_road_with_pavements_and_paper_umbrellas,_Higashiyama-ku,_Kyoto,_Japan,_early_morning.jpg?width=640" alt="Pedestrian road with pavements and paper umbrellas, Higashiyama-ku, Kyoto, early morning" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Pedestrian road with pavements and paper umbrellas, Higashiyama-ku, Kyoto, Japan, early morning.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Basile Morin　<span class="k">许可：</span>CC BY-SA 4.0</div>
+        <div class="reason">清晨5:40空街，贴合晨间文案</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Pedestrian_road_with_pavements_and_paper_umbrellas,_Higashiyama-ku,_Kyoto,_Japan,_early_morning.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Sannenzaka_street,_Kyoto_(3811257874).jpg?width=640" alt="Sannenzaka street, Kyoto" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Sannenzaka street, Kyoto (3811257874).jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Andrea Schaffer　<span class="k">许可：</span>CC BY 2.0</div>
+        <div class="reason">坂道日常街景，游客不多</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Sannenzaka_street,_Kyoto_(3811257874).jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Ninenzaka_near_Kiyomizudera_Temple.jpg?width=640" alt="Ninenzaka near Kiyomizudera Temple" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Ninenzaka near Kiyomizudera Temple.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>そらみみ　<span class="k">许可：</span>CC BY-SA 3.0</div>
+        <div class="reason">岔路口纪实视角</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Ninenzaka_near_Kiyomizudera_Temple.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="gion">
+  <h2>祇园·花见小路 <span class="id-tag">gion</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">茶屋红壳墙连成的花街，白川的柳影在巷尾</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Streets_of_Gion,_Kyoto_-_Gion7712.jpg?width=640" alt="Streets of Gion, Kyoto - narrow alley with machiya" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Streets of Gion, Kyoto - Gion7712.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>lumoplank　<span class="k">许可：</span>CC0 1.0</div>
+        <div class="reason">町屋窄巷无人摆拍，CC0授权</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Streets_of_Gion,_Kyoto_-_Gion7712.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Streets_of_Gion,_Kyoto_-_Gion7708.jpg?width=640" alt="Streets of Gion, Kyoto - quiet street at night" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Streets of Gion, Kyoto - Gion7708.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>lumoplank　<span class="k">许可：</span>CC0 1.0</div>
+        <div class="reason">夜晚安静街道，两个路人剪影</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Streets_of_Gion,_Kyoto_-_Gion7708.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Shopping_street_in_Gion,_Kyoto_(6156102072).jpg?width=640" alt="Shopping street in Gion, Kyoto" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Shopping street in Gion, Kyoto (6156102072).jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Maarten Heerlien　<span class="k">许可：</span>CC BY 2.0</div>
+        <div class="reason">白天街景，日常而非明信片</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Shopping_street_in_Gion,_Kyoto_(6156102072).jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="tetsugaku">
+  <h2>哲学之道 <span class="id-tag">tetsugaku</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">沿琵琶湖疏水的两公里小径，思考用的路</p>
+  <p class="single-note">已避开大量高饱和樱花季明信片图；第一张虽拍到樱花季，但是路人如常散步的实拍而非摆拍，故仍保留，并额外配了一张无花季素颜版本备选。</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Tetsugaku_no_Michi_01.JPG?width=640" alt="Tetsugaku no Michi 01" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Tetsugaku no Michi 01.JPG</div>
+        <div class="meta-line"><span class="k">作者：</span>Reggaeman　<span class="k">许可：</span>CC BY-SA 3.0</div>
+        <div class="reason">樱花季实拍，行人如常散步非摆拍</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Tetsugaku_no_Michi_01.JPG" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/The_Art_of_Preserving_One%27s_Own_Culture_and_Heritage_VII_(KYOTO-JAPAN-TETSUGAKU_NO_MICHI-PHILOSOPHER%27S_WALK)_(845278173).jpg?width=640" alt="Walking along the tree-lined Tetsugaku no Michi" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">The Art of Preserving One's Own Culture and Heritage VII (...TETSUGAKU NO MICHI...) (845278173).jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Chi King　<span class="k">许可：</span>CC BY 2.0</div>
+        <div class="reason">有人在树荫下行走，日常感强</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:The_Art_of_Preserving_One%27s_Own_Culture_and_Heritage_VII_(KYOTO-JAPAN-TETSUGAKU_NO_MICHI-PHILOSOPHER%27S_WALK)_(845278173).jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Japan_Kyoto_philosophers_walk_DSC00297.jpg?width=640" alt="Japan Kyoto philosophers walk DSC00297" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Japan Kyoto philosophers walk DSC00297.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>David Monniaux　<span class="k">许可：</span>CC BY-SA 3.0</div>
+        <div class="reason">非花季素颜版本，作为季节备选</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Japan_Kyoto_philosophers_walk_DSC00297.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="kinkakuji">
+  <h2>金阁寺 <span class="id-tag">kinkakuji</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">贴满金箔的舍利殿浮在镜湖池上</p>
+  <p class="single-note">这个地点天生就是「明信片」构图（金阁+倒影），已避开 Commons 上一批过度对称、高饱和的水面倒影系列，选了相对平实的三张。</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Golden_Pavilion_Kinkaku-ji_2024.jpg?width=640" alt="Golden Pavilion Kinkaku-ji 2024" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Golden Pavilion Kinkaku-ji 2024.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Nacaru　<span class="k">许可：</span>CC BY-SA 4.0</div>
+        <div class="reason">冬末平实视角，非HDR堆砌</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Golden_Pavilion_Kinkaku-ji_2024.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Kinkaku-ji_in_November_2016_-03.jpg?width=640" alt="Kinkaku-ji in November 2016" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Kinkaku-ji in November 2016 -03.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Martin Falbisoner　<span class="k">许可：</span>CC BY-SA 4.0</div>
+        <div class="reason">秋叶自然光，未过度饱和</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Kinkaku-ji_in_November_2016_-03.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Shariden,_Kinkaku-ji,_Kyoto,_East_View_20130811_1.jpg?width=640" alt="Shariden, Kinkaku-ji, Kyoto, East View" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Shariden, Kinkaku-ji, Kyoto, East View 20130811 1.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>DXR　<span class="k">许可：</span>CC BY-SA 3.0</div>
+        <div class="reason">纪实记录视角，东侧平视</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Shariden,_Kinkaku-ji,_Kyoto,_East_View_20130811_1.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="shimogamo">
+  <h2>下鸭神社·糺之森 <span class="id-tag">shimogamo</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">原生林包裹的世界遗产，京都最古老的神社之一</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/R%C5%8Dmon,_Shimogamo-jinja.jpg?width=640" alt="Romon, Shimogamo-jinja" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Rōmon, Shimogamo-jinja.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Kakidai　<span class="k">许可：</span>CC BY-SA 4.0</div>
+        <div class="reason">朱红楼门平视记录，非仰拍大片</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:R%C5%8Dmon,_Shimogamo-jinja.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Shimogamo_shrine_Tadasu-no-mori_(%E7%B3%BA%E3%81%99%E3%81%AE%E6%A3%AE),_Kyoto,_Japan_-_panoramio.jpg?width=640" alt="Shimogamo shrine Tadasu-no-mori" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Shimogamo shrine Tadasu-no-mori (糺すの森), Kyoto, Japan - panoramio.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>yasui　<span class="k">许可：</span>CC BY-SA 3.0</div>
+        <div class="reason">森林参道日常视角</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Shimogamo_shrine_Tadasu-no-mori_(%E7%B3%BA%E3%81%99%E3%81%AE%E6%A3%AE),_Kyoto,_Japan_-_panoramio.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Tadasu-no-Mori.jpg?width=640" alt="Tadasu-no-Mori approach path" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Tadasu-no-Mori.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Mochi（日语维基）　<span class="k">许可：</span>CC BY-SA 3.0</div>
+        <div class="reason">参道树荫，贴合糺之森文案</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Tadasu-no-Mori.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<section class="loc" id="ichijoji">
+  <h2>一乘寺·惠文社 <span class="id-tag">ichijoji</span> <span class="count-tag">3 张候选</span></h2>
+  <p class="brief">大学生的街区：一家被选进「世界最美」的书店和一条拉面激战街</p>
+  <div class="grid">
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Keibunsha_Ichijoji,_Kyoto_-_Nov_22,_2009_(1).jpg?width=640" alt="Keibunsha Ichijoji, Kyoto - Nov 22, 2009 (1)" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Keibunsha Ichijoji, Kyoto - Nov 22, 2009 (1).jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Kentaro Ohno　<span class="k">许可：</span>CC BY 2.0</div>
+        <div class="reason">书店外观日间实拍</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Keibunsha_Ichijoji,_Kyoto_-_Nov_22,_2009_(1).jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Keibunsha_Ichijoji,_Kyoto_-_Nov_22,_2009_(2).jpg?width=640" alt="Keibunsha Ichijoji, Kyoto - Nov 22, 2009 (2)" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Keibunsha Ichijoji, Kyoto - Nov 22, 2009 (2).jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Kentaro Ohno　<span class="k">许可：</span>CC BY 2.0</div>
+        <div class="reason">同日不同角度，备选</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Keibunsha_Ichijoji,_Kyoto_-_Nov_22,_2009_(2).jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card">
+      <div class="thumb-wrap"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Keibunsha_Ichijoji,_Kyoto_-_Mar_15,_2008.jpg?width=640" alt="Keibunsha Ichijoji, Kyoto - Mar 15, 2008, night" loading="lazy"></div>
+      <figcaption>
+        <div class="filename">Keibunsha Ichijoji, Kyoto - Mar 15, 2008.jpg</div>
+        <div class="meta-line"><span class="k">作者：</span>Yuco　<span class="k">许可：</span>CC BY-SA 2.0</div>
+        <div class="reason">夜晚灯光版本，配夜间文案</div>
+        <div class="card-foot">
+          <a href="https://commons.wikimedia.org/wiki/File:Keibunsha_Ichijoji,_Kyoto_-_Mar_15,_2008.jpg" target="_blank" rel="noopener">文件页 →</a>
+          <label class="pick-mark"><input type="checkbox"> 选它</label>
+        </div>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+</main>
+
+<footer class="page">
+  <p>数据来源：Wikimedia Commons（MediaWiki API 检索 + 逐张 extmetadata 核对）。许可范围限定 Public Domain / CC0 / CC BY / CC BY-SA。完整候选数据见同目录 <code>candidates.json</code>。</p>
+</footer>
+
+<div id="pickbar">
+  <span class="cnt">已选 <b id="pickcount">0</b> / 12 个地点</span>
+  <button class="primary" id="copybtn">复制选择结果</button>
+  <button id="clearbtn">清空</button>
+  <span class="hint" id="pickhint">没选的地点会自动用文字拍立得，不必凑满</span>
+  <textarea id="picktext" readonly></textarea>
+</div>
+
+<script>
+(function () {
+  var KEY = "woyou_kyoto_picks";
+  var sections = document.querySelectorAll("section.loc");
+  var boxes = [];
+
+  function store() {
+    try { return JSON.parse(localStorage.getItem(KEY) || "{}"); }
+    catch (e) { return {}; }
+  }
+  function save(picks) {
+    try { localStorage.setItem(KEY, JSON.stringify(picks)); } catch (e) {}
+  }
+
+  sections.forEach(function (sec) {
+    var loc = sec.id;
+    var cards = sec.querySelectorAll("figure.card");
+    cards.forEach(function (card, i) {
+      var box = card.querySelector(".pick-mark input");
+      if (!box) return;
+      box.dataset.loc = loc;
+      box.dataset.idx = String(i + 1);
+      var fn = card.querySelector(".filename");
+      box.dataset.file = fn ? fn.textContent.trim().replace(/（.*?）\s*$/, "") : "";
+      boxes.push(box);
+      box.addEventListener("change", function () {
+        var picks = store();
+        if (box.checked) {
+          boxes.forEach(function (b) {
+            if (b !== box && b.dataset.loc === loc) {
+              b.checked = false;
+              b.closest("figure.card").classList.remove("picked");
+            }
+          });
+          picks[loc] = { idx: +box.dataset.idx, file: box.dataset.file };
+        } else {
+          delete picks[loc];
+        }
+        card.classList.toggle("picked", box.checked);
+        save(picks);
+        refresh();
+      });
+    });
+  });
+
+  function refresh() {
+    var picks = store();
+    var n = Object.keys(picks).length;
+    document.getElementById("pickcount").textContent = n;
+  }
+
+  function restore() {
+    var picks = store();
+    boxes.forEach(function (b) {
+      var p = picks[b.dataset.loc];
+      var on = !!(p && p.idx === +b.dataset.idx);
+      b.checked = on;
+      b.closest("figure.card").classList.toggle("picked", on);
+    });
+    refresh();
+  }
+
+  function buildText() {
+    var picks = store();
+    var lines = ["京都选片结果（地点: 第几张 文件名）——"];
+    sections.forEach(function (sec) {
+      var p = picks[sec.id];
+      if (p) lines.push(sec.id + ": 第" + p.idx + "张  " + p.file);
+    });
+    if (lines.length === 1) lines.push("（还没有勾选）");
+    return lines.join("\n");
+  }
+
+  document.getElementById("copybtn").addEventListener("click", function () {
+    var text = buildText();
+    var ta = document.getElementById("picktext");
+    ta.value = text;
+    ta.style.display = "block";
+    ta.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        document.getElementById("pickhint").textContent = "已复制到剪贴板，贴给小克就行";
+      }, function () {
+        document.getElementById("pickhint").textContent = "自动复制没成功——文本框里的内容手动复制一下";
+      });
+    } else {
+      document.getElementById("pickhint").textContent = "文本框里的内容手动复制一下（Ctrl+C）";
+    }
+  });
+
+  document.getElementById("clearbtn").addEventListener("click", function () {
+    save({});
+    document.getElementById("picktext").style.display = "none";
+    restore();
+  });
+
+  restore();
+})();
+</script>
+
+</body>
+</html>

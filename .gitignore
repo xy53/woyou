@@ -1,0 +1,5 @@
+.env
+saves/
+__pycache__/
+*.pyc
+content/*/pack.debug.json

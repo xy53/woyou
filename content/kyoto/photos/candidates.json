@@ -1,0 +1,304 @@
+{
+  "_meta": {
+    "source": "Wikimedia Commons",
+    "generated": "2026-08-05",
+    "note": "候选清单，未落库。thumb_url 为 Special:FilePath 直链缩略（width=640），file_page 为文件页原始链接。许可仅收 Public Domain / CC0 / CC BY / CC BY-SA。",
+    "thumb_url_pattern": "https://commons.wikimedia.org/wiki/Special:FilePath/<文件名>?width=640"
+  },
+  "sanjo": [
+    {
+      "title": "Teramachi Street shopping area 1.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Teramachi_Street_shopping_area_1.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Teramachi_Street_shopping_area_1.jpg?width=640",
+      "author": "Mx. Granger",
+      "license": "CC0 1.0",
+      "reason": "拱廊内景，无人摆拍，CC0授权"
+    },
+    {
+      "title": "Teramachi-dori, Kyoto - DSC05869.JPG",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Teramachi-dori,_Kyoto_-_DSC05869.JPG",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Teramachi-dori,_Kyoto_-_DSC05869.JPG?width=640",
+      "author": "Daderot",
+      "license": "CC0 1.0",
+      "reason": "街景纪实视角，光线自然"
+    },
+    {
+      "title": "Teramachi shopping street, Kyoto, May 2017.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Teramachi_shopping_street,_Kyoto,_May_2017.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Teramachi_shopping_street,_Kyoto,_May_2017.jpg?width=640",
+      "author": "Celuici",
+      "license": "CC BY-SA 3.0",
+      "reason": "夜晚拱廊灯光，可配夜间文案"
+    }
+  ],
+  "nishiki": [
+    {
+      "title": "Tsukemono shop by collinox in Nishiki Ichiba, Kyoto.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Tsukemono_shop_by_collinox_in_Nishiki_Ichiba,_Kyoto.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tsukemono_shop_by_collinox_in_Nishiki_Ichiba,_Kyoto.jpg?width=640",
+      "author": "collinox",
+      "license": "CC BY 2.0",
+      "reason": "腌菜缸特写，正合「敞着口」描述"
+    },
+    {
+      "title": "Nishiki ichiba Kyoto JPN.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Nishiki_ichiba_Kyoto_JPN.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Nishiki_ichiba_Kyoto_JPN.jpg?width=640",
+      "author": "ignis",
+      "license": "CC BY-SA 3.0",
+      "reason": "长巷纵深，天棚光线均匀"
+    },
+    {
+      "title": "Nishiki Ichiba by Kazutaka NAKANO in Kyoto.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Nishiki_Ichiba_by_Kazutaka_NAKANO_in_Kyoto.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Nishiki_Ichiba_by_Kazutaka_NAKANO_in_Kyoto.jpg?width=640",
+      "author": "Kazutaka NAKANO",
+      "license": "CC BY 2.0",
+      "reason": "店铺日常一景，非游客摆拍"
+    }
+  ],
+  "kamogawa": [
+    {
+      "title": "Couples sitting by the Kamo river in Kyoto.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Couples_sitting_by_the_Kamo_river_in_Kyoto.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Couples_sitting_by_the_Kamo_river_in_Kyoto.jpg?width=640",
+      "author": "Sgroey",
+      "license": "CC BY-SA 4.0",
+      "reason": "河岸各自落座，正是「客厅」感"
+    },
+    {
+      "title": "Kamo-gawa in Kyoto hdsr S5 01.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Kamo-gawa_in_Kyoto_hdsr_S5_01.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Kamo-gawa_in_Kyoto_hdsr_S5_01.jpg?width=640",
+      "author": "Hyppolyte de Saint-Rambert",
+      "license": "CC BY 4.0",
+      "reason": "白鹭立于浅滩，贴合文案描写"
+    },
+    {
+      "title": "Pedestrians crossing the Kamo River.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Pedestrians_crossing_the_Kamo_River.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pedestrians_crossing_the_Kamo_River.jpg?width=640",
+      "author": "Grendelkhan",
+      "license": "CC BY-SA 4.0",
+      "reason": "跳石过河的日常瞬间"
+    }
+  ],
+  "pontocho": [
+    {
+      "title": "Pontocho Alley, Kyoto (53589184823).jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Pontocho_Alley,_Kyoto_(53589184823).jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pontocho_Alley,_Kyoto_(53589184823).jpg?width=640",
+      "author": "Sergiy Galyonkin",
+      "license": "CC BY-SA 2.0",
+      "reason": "窄巷纵深加行人，日常感强"
+    },
+    {
+      "title": "Pontocho by Wolfiewolf in Kashiwayacho, Kyoto.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Pontocho_by_Wolfiewolf_in_Kashiwayacho,_Kyoto.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pontocho_by_Wolfiewolf_in_Kashiwayacho,_Kyoto.jpg?width=640",
+      "author": "Wolfiewolf",
+      "license": "CC BY 2.0",
+      "reason": "木格窗与灯笼，贴近街面视角"
+    },
+    {
+      "title": "Kushi-yaki restaurant by shermain in Pontocho, Kyoto.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Kushi-yaki_restaurant_by_shermain_in_Pontocho,_Kyoto.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Kushi-yaki_restaurant_by_shermain_in_Pontocho,_Kyoto.jpg?width=640",
+      "author": "shermain",
+      "license": "CC BY-SA 2.0",
+      "reason": "店门口的生活气息，非正面大片"
+    }
+  ],
+  "rokuyosha": [
+    {
+      "title": "Rokuyousha Chikaten.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Rokuyousha_Chikaten.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Rokuyousha_Chikaten.jpg?width=640",
+      "author": "舌先現象になります",
+      "license": "CC BY-SA 4.0",
+      "reason": "唯一满足分辨率的地下店实拍"
+    }
+  ],
+  "kiyomizu": [
+    {
+      "title": "Kiyomizu-dera, Kyoto, November 2016 -01.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Kiyomizu-dera,_Kyoto,_November_2016_-01.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Kiyomizu-dera,_Kyoto,_November_2016_-01.jpg?width=640",
+      "author": "Martin Falbisoner",
+      "license": "CC BY-SA 4.0",
+      "reason": "舞台全景，木柱结构清楚可见"
+    },
+    {
+      "title": "Near Kiyomizu-dera May 06.JPG",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Near_Kiyomizu-dera_May_06.JPG",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Near_Kiyomizu-dera_May_06.JPG?width=640",
+      "author": "Eckhard Pecher",
+      "license": "CC BY-SA 2.5",
+      "reason": "寺周边山林景，非正殿摆拍大片"
+    },
+    {
+      "title": "Kiyomizu-dera - August 2013 - Sarah Stierch 02.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Kiyomizu-dera_-_August_2013_-_Sarah_Stierch_02.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Kiyomizu-dera_-_August_2013_-_Sarah_Stierch_02.jpg?width=640",
+      "author": "Sarah Stierch",
+      "license": "CC BY 4.0",
+      "reason": "纪实摄影师手法，少修饰感"
+    }
+  ],
+  "ninenzaka": [
+    {
+      "title": "Pedestrian road with pavements and paper umbrellas, Higashiyama-ku, Kyoto, Japan, early morning.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Pedestrian_road_with_pavements_and_paper_umbrellas,_Higashiyama-ku,_Kyoto,_Japan,_early_morning.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pedestrian_road_with_pavements_and_paper_umbrellas,_Higashiyama-ku,_Kyoto,_Japan,_early_morning.jpg?width=640",
+      "author": "Basile Morin",
+      "license": "CC BY-SA 4.0",
+      "reason": "清晨5:40空街，贴合晨间文案"
+    },
+    {
+      "title": "Sannenzaka street, Kyoto (3811257874).jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Sannenzaka_street,_Kyoto_(3811257874).jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Sannenzaka_street,_Kyoto_(3811257874).jpg?width=640",
+      "author": "Andrea Schaffer",
+      "license": "CC BY 2.0",
+      "reason": "坂道日常街景，游客不多"
+    },
+    {
+      "title": "Ninenzaka near Kiyomizudera Temple.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Ninenzaka_near_Kiyomizudera_Temple.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Ninenzaka_near_Kiyomizudera_Temple.jpg?width=640",
+      "author": "そらみみ",
+      "license": "CC BY-SA 3.0",
+      "reason": "岔路口纪实视角"
+    }
+  ],
+  "gion": [
+    {
+      "title": "Streets of Gion, Kyoto - Gion7712.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Streets_of_Gion,_Kyoto_-_Gion7712.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Streets_of_Gion,_Kyoto_-_Gion7712.jpg?width=640",
+      "author": "lumoplank",
+      "license": "CC0 1.0",
+      "reason": "町屋窄巷无人摆拍，CC0授权"
+    },
+    {
+      "title": "Streets of Gion, Kyoto - Gion7708.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Streets_of_Gion,_Kyoto_-_Gion7708.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Streets_of_Gion,_Kyoto_-_Gion7708.jpg?width=640",
+      "author": "lumoplank",
+      "license": "CC0 1.0",
+      "reason": "夜晚安静街道，两个路人剪影"
+    },
+    {
+      "title": "Shopping street in Gion, Kyoto (6156102072).jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Shopping_street_in_Gion,_Kyoto_(6156102072).jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Shopping_street_in_Gion,_Kyoto_(6156102072).jpg?width=640",
+      "author": "Maarten Heerlien",
+      "license": "CC BY 2.0",
+      "reason": "白天街景，日常而非明信片"
+    }
+  ],
+  "tetsugaku": [
+    {
+      "title": "Tetsugaku no Michi 01.JPG",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Tetsugaku_no_Michi_01.JPG",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tetsugaku_no_Michi_01.JPG?width=640",
+      "author": "Reggaeman",
+      "license": "CC BY-SA 3.0",
+      "reason": "樱花季实拍，行人如常散步非摆拍"
+    },
+    {
+      "title": "The Art of Preserving One's Own Culture and Heritage VII (KYOTO-JAPAN-TETSUGAKU NO MICHI-PHILOSOPHER'S WALK) (845278173).jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:The_Art_of_Preserving_One%27s_Own_Culture_and_Heritage_VII_(KYOTO-JAPAN-TETSUGAKU_NO_MICHI-PHILOSOPHER%27S_WALK)_(845278173).jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/The_Art_of_Preserving_One%27s_Own_Culture_and_Heritage_VII_(KYOTO-JAPAN-TETSUGAKU_NO_MICHI-PHILOSOPHER%27S_WALK)_(845278173).jpg?width=640",
+      "author": "Chi King",
+      "license": "CC BY 2.0",
+      "reason": "有人在树荫下行走，日常感强"
+    },
+    {
+      "title": "Japan Kyoto philosophers walk DSC00297.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Japan_Kyoto_philosophers_walk_DSC00297.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Japan_Kyoto_philosophers_walk_DSC00297.jpg?width=640",
+      "author": "David Monniaux",
+      "license": "CC BY-SA 3.0",
+      "reason": "非花季素颜版本，作为季节备选"
+    }
+  ],
+  "kinkakuji": [
+    {
+      "title": "Golden Pavilion Kinkaku-ji 2024.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Golden_Pavilion_Kinkaku-ji_2024.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Golden_Pavilion_Kinkaku-ji_2024.jpg?width=640",
+      "author": "Nacaru",
+      "license": "CC BY-SA 4.0",
+      "reason": "冬末平实视角，非HDR堆砌"
+    },
+    {
+      "title": "Kinkaku-ji in November 2016 -03.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Kinkaku-ji_in_November_2016_-03.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Kinkaku-ji_in_November_2016_-03.jpg?width=640",
+      "author": "Martin Falbisoner",
+      "license": "CC BY-SA 4.0",
+      "reason": "秋叶自然光，未过度饱和"
+    },
+    {
+      "title": "Shariden, Kinkaku-ji, Kyoto, East View 20130811 1.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Shariden,_Kinkaku-ji,_Kyoto,_East_View_20130811_1.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Shariden,_Kinkaku-ji,_Kyoto,_East_View_20130811_1.jpg?width=640",
+      "author": "DXR",
+      "license": "CC BY-SA 3.0",
+      "reason": "纪实记录视角，东侧平视"
+    }
+  ],
+  "shimogamo": [
+    {
+      "title": "Rōmon, Shimogamo-jinja.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:R%C5%8Dmon,_Shimogamo-jinja.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/R%C5%8Dmon,_Shimogamo-jinja.jpg?width=640",
+      "author": "Kakidai",
+      "license": "CC BY-SA 4.0",
+      "reason": "朱红楼门平视记录，非仰拍大片"
+    },
+    {
+      "title": "Shimogamo shrine Tadasu-no-mori (糺すの森), Kyoto, Japan - panoramio.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Shimogamo_shrine_Tadasu-no-mori_(%E7%B3%BA%E3%81%99%E3%81%AE%E6%A3%AE),_Kyoto,_Japan_-_panoramio.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Shimogamo_shrine_Tadasu-no-mori_(%E7%B3%BA%E3%81%99%E3%81%AE%E6%A3%AE),_Kyoto,_Japan_-_panoramio.jpg?width=640",
+      "author": "yasui",
+      "license": "CC BY-SA 3.0",
+      "reason": "森林参道日常视角"
+    },
+    {
+      "title": "Tadasu-no-Mori.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Tadasu-no-Mori.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Tadasu-no-Mori.jpg?width=640",
+      "author": "Mochi（日语维基）",
+      "license": "CC BY-SA 3.0",
+      "reason": "参道树荫，贴合糺之森文案"
+    }
+  ],
+  "ichijoji": [
+    {
+      "title": "Keibunsha Ichijoji, Kyoto - Nov 22, 2009 (1).jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Keibunsha_Ichijoji,_Kyoto_-_Nov_22,_2009_(1).jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Keibunsha_Ichijoji,_Kyoto_-_Nov_22,_2009_(1).jpg?width=640",
+      "author": "Kentaro Ohno",
+      "license": "CC BY 2.0",
+      "reason": "书店外观日间实拍"
+    },
+    {
+      "title": "Keibunsha Ichijoji, Kyoto - Nov 22, 2009 (2).jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Keibunsha_Ichijoji,_Kyoto_-_Nov_22,_2009_(2).jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Keibunsha_Ichijoji,_Kyoto_-_Nov_22,_2009_(2).jpg?width=640",
+      "author": "Kentaro Ohno",
+      "license": "CC BY 2.0",
+      "reason": "同日不同角度，备选"
+    },
+    {
+      "title": "Keibunsha Ichijoji, Kyoto - Mar 15, 2008.jpg",
+      "file_page": "https://commons.wikimedia.org/wiki/File:Keibunsha_Ichijoji,_Kyoto_-_Mar_15,_2008.jpg",
+      "thumb_url": "https://commons.wikimedia.org/wiki/Special:FilePath/Keibunsha_Ichijoji,_Kyoto_-_Mar_15,_2008.jpg?width=640",
+      "author": "Yuco",
+      "license": "CC BY-SA 2.0",
+      "reason": "夜晚灯光版本，配夜间文案"
+    }
+  ]
+}
