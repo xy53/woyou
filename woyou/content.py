@@ -9,13 +9,18 @@ from pathlib import Path
 from .util import CONTENT_DIR, read_json, fuzzy_pick, slot_of
 
 LOC_TYPES = {"temple", "shrine", "market", "street", "river", "park", "path",
-             "viewpoint", "museum", "shop", "nightlife", "cafe", "landmark", "square"}
+             "viewpoint", "museum", "shop", "nightlife", "cafe", "landmark", "square",
+             "mosque", "church", "canal", "harbor", "bath", "palace", "bridge",
+             "garden", "ruins"}
 
 TYPE_LABEL = {
-    "temple": "寺院", "shrine": "神社", "market": "市场", "street": "街巷",
+    "temple": "寺院", "shrine": "祠堂", "market": "市场", "street": "街巷",
     "river": "河岸", "park": "园林", "path": "小径", "viewpoint": "眺望",
     "museum": "博物馆", "shop": "店铺", "nightlife": "夜色", "cafe": "咖啡",
     "landmark": "地标", "square": "广场",
+    "mosque": "清真寺", "church": "教堂", "canal": "运河", "harbor": "港口",
+    "bath": "浴场", "palace": "宫殿", "bridge": "桥", "garden": "庭园",
+    "ruins": "遗迹",
 }
 
 

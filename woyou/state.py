@@ -95,9 +95,12 @@ class TripState:
 
 def roll_weather(state: TripState, pack: dict, day: int) -> str:
     """某天在当前城市的天气（确定性、按需生成并缓存）。"""
-    key = str(day)
+    key = f"{state.slug}:{day}"
     cached = state.weather_by_day.get(key)
+    if not cached and len(state.route) <= 1:
+        cached = state.weather_by_day.get(str(day))
     if cached:
+        state.weather_by_day[key] = cached
         return cached
     meta = pack["meta"]
     table = meta.get("weather", {})

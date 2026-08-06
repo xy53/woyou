@@ -72,8 +72,7 @@ META_PROMPT_TAIL = """
   "flight_cost_hint": 飞往邻国主要城市的经济舱票价量级(整数),
   "postcard_price": 一张明信片加一枚邮票在当地的价格(整数,当地货币),
   "postcard_flavor": "30-60字、以「你」开头的完整一句（句号结尾）：在这座城买明信片的小场景——
-                      在哪种店、挑的是什么图案的明信片、贴的是什么邮票。要具体到这座城，
-                      像：你在寺町通的纸品老铺挑了一张木版画明信片——印的是雨中的五重塔，贴上一枚樱花邮票。",
+                      在哪种店、挑的是什么图案的明信片、贴的是什么邮票。要具体到这座城的真实街道和本地特色。",
   "default_budget": 建议的5天旅行预算(整数,含住宿吃饭门票市内交通,宽裕适中),
   "default_days": 5,
   "intro": "180-260字的抵达叙事：第二人称，从落地/下车写到进城放下行李，要有这座城独有的气味与声音",
@@ -113,7 +112,7 @@ SKELETON_RULES = """
 }
 要求：
 - 3-5 个片区；地点共 14-17 处，全部真实存在，类型尽量多样；
-- type 只能取：temple/shrine/market/street/river/park/path/viewpoint/museum/shop/nightlife/cafe/landmark/square
+- type 只能取：temple/shrine/market/street/river/park/path/viewpoint/museum/shop/nightlife/cafe/landmark/square/mosque/church/canal/harbor/bath/palace/bridge/garden/ruins（按城市特色选最贴切的）
 - 其中 11-13 处 starter:true（游客地图上有的），2-4 处 starter:false（深巷：
   本地人才知道的真实去处，游戏中需要被人指点或深度探索才会出现在地图上），
   隐藏点必须给 reveal_via，指定由哪个 starter 地点的人（npc）或深逛（explore）引出；
@@ -158,8 +157,8 @@ DETAIL_RULES = """
   这是哪儿（不同时段/雨天的变体，声音会换一套，不是同一段话改几个字）；
   若地点有休业时段（hours 之外的时辰），对应时段的变体要写「从门外听到」的
   声音——门里的安静、卷帘的动静、街面替它发出的声响；
-- join（可选，本片区约一半地点写；只给市场／神社／寺院／河岸／老街／咖啡店
-  这类「有本地人的做法可以照着模仿」的地方写）：
+- join（可选，本片区约一半地点写；只给市场／寺院／清真寺／教堂／河岸／老街／
+  咖啡店／浴场这类「有本地人的做法可以照着模仿」的地方写）：
   {"text":"100-160字，第二人称：照着本地人的样子，把某件具体的小事做一次——
            排队的规矩、参拜的礼数、点单的暗语、跳石过河、洗手的次序、
            进门的一句招呼……动作要写清楚到读者能照做，允许笨拙，
@@ -271,13 +270,15 @@ wishes 的 check 判定 DSL（type 必选其一，引用必须用真实存在的
  {"type":"join","loc":可选}          照着本地人的样子做一次那里的规矩
  {"type":"postcard"}                 寄出一张明信片
  {"type":"story","count":1}          {"type":"gem","count":1}
+ {"type":"discovery","count":1}      找到隐藏地点或 gem（比 gem 宽松）
  {"type":"explore","loc":"地点id","level":2}              {"type":"rest","loc_type":"cafe"}
 要求：
 - dishes 8-10 样，全部真实；events 6-9 个，其中 1-2 个雨天限定、1-2 个夜晚限定；
 - wander 10-14 条：玩家漫无目的地走时撞见的东西，写「无名的、非景点的、日常的」——
-  小巷尽头的小神龛、屋脊上的陶像、亮着的自动贩卖机、深夜还开着的澡堂、
-  被人系上围兜擦干净的地藏、二楼晒出来的被子、门口给猫留的水碗……
+  小巷尽头的壁龛、窗台上晒的腌菜坛子、二楼晾出来的被子、门口给猫留的水碗、
+  老人坐在台阶上扇扇子、墙角贴的手写告示、深夜还亮着灯的裁缝铺……
   要有生活的证据感：看得出有人在照料它、有人天天从它旁边过；
+  意象要贴合这座城的文化和气候，不要套用其他城市的典型物件；
   不写已经在地点列表里的地方，不写成景点介绍，不给它名字也没关系；
   半数挂 district（写出那个片区的性格），少数挂 slot 或 weather:"雨"；
 - wishes 12-16 条：这是给玩家自己挑选的「心愿清单」菜单，玩家只会抄走其中几条，
@@ -481,10 +482,16 @@ def sanitize_pack(pack: dict) -> list:
     meta["default_days"] = min(14, max(3, meta["default_days"]))
     meta["postcard_price"] = max(1, meta["postcard_price"])
     flavor = meta.get("postcard_flavor")
-    if not isinstance(flavor, str) or not flavor.strip():
-        meta.pop("postcard_flavor", None)
-    else:
+    if isinstance(flavor, list):
+        flavor = [s.strip() for s in flavor if isinstance(s, str) and s.strip()]
+        if flavor:
+            meta["postcard_flavor"] = flavor
+        else:
+            meta.pop("postcard_flavor", None)
+    elif isinstance(flavor, str) and flavor.strip():
         meta["postcard_flavor"] = flavor.strip()
+    else:
+        meta.pop("postcard_flavor", None)
     try:
         meta["cny_rate"] = float(meta.get("cny_rate", 1)) or 1
     except (TypeError, ValueError):
@@ -632,8 +639,9 @@ def sanitize_pack(pack: dict) -> list:
         if not isinstance(chk, dict):
             continue
         if chk.get("type") not in {"look", "visit", "eat", "story", "photo",
-                                   "buy", "gem", "explore", "npc", "rest",
-                                   "listen", "join", "wander", "postcard"}:
+                                   "buy", "gem", "discovery", "explore",
+                                   "npc", "rest", "listen", "join",
+                                   "wander", "postcard"}:
             log.append(f"wish {w['id']} 判定类型非法，弃用")
             continue
         if chk.get("loc"):

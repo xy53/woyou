@@ -1181,6 +1181,10 @@ class Trip:
             return
         same_country = dmeta.get("country") == meta.get("country")
         t_cost = 3 if same_country else 5
+        e_cost = 10 if same_country else 18
+        if st.energy < e_cost:
+            self.emit("太累了，这趟路程撑不下来。先 eat 吃点东西或 rest 歇一歇。")
+            return
         if st.t + t_cost > 9:
             self.emit("今天出发太晚了，到了也是深夜。明天一早再启程吧。")
             return
@@ -1202,7 +1206,7 @@ class Trip:
             return
         self._pay(fare_src, f"去{dmeta['city']}的{fare_word}")
         self._spend_t(t_cost)
-        self._spend_energy(10 if same_country else 18)
+        self._spend_energy(e_cost)
 
         if dmeta.get("currency") != meta.get("currency"):
             new_money = int(st.money / src_rate * dst_rate * 0.98)
@@ -1236,7 +1240,12 @@ class Trip:
             cands.append((p["slug"], names))
         slug = fuzzy_pick(query, cands)
         if slug:
-            return content.load_pack(slug)
+            try:
+                return content.load_pack(slug)
+            except Exception:
+                self.emit(f"城市「{query}」的内容包损坏，无法加载。"
+                          f"可尝试重新生成：uv run play.py build --city {query} --force")
+                return None
         self.emit("还没有这座城市的旅行内容。\n"
                   "运行 `uv run play.py packs` 查看已有城市。\n"
                   f"制作新城市可在旅程外运行：uv run play.py build --city {query}")
