@@ -5,9 +5,9 @@
   uv run play.py demo               直接在京都开一段离线旅程（不需要 API）
   uv run play.py new --city 京都 [--days 5 --budget 62000 --mate aman --seed 7]
   uv run play.py build --city 奈良  预先为某座城做调研与内容生成（需要 API）
-  uv run play.py cmd <命令...>      对当前旅程执行一条命令（AI 玩家用这个）
+  uv run play.py cmd <命令...>      对当前旅程执行一条命令
   uv run play.py export             导出游记
-  uv run play.py report [--photos text|real|both]  生成旅行报告
+  uv run play.py report             重新显示旅程结算
   uv run play.py watch [--port N]   打开浏览器观战页
   uv run play.py trips / packs      列出旅程存档 / 已生成的城市
 """
@@ -59,6 +59,9 @@ def resolve_city(query: str, allow_build: bool = True, force: bool = False):
     return None
 
 
+_WATCH_HINT = "💡 想旁观旅行？另开终端：uv run play.py watch"
+
+
 def start_trip(args) -> Trip | None:
     slug = resolve_city(args.city)
     if not slug:
@@ -66,6 +69,7 @@ def start_trip(args) -> Trip | None:
     trip = Trip.new(slug, days=args.days, budget=args.budget,
                     seed=args.seed, month=args.month, mate=args.mate or "")
     print(trip.opening())
+    print(_WATCH_HINT, file=sys.stderr)
     return trip
 
 
@@ -283,7 +287,7 @@ class ObserverHandler(BaseHTTPRequestHandler):
             from woyou.report import build_finale_data, render_settlement_text
         except ImportError:
             self._send_json(200, {"ok": False,
-                                   "error": "旅行报告模块（woyou/report.py）还没就位，暂时无法生成报告。"})
+                                   "error": "结算模块（woyou/report.py）还没就位。"})
             return
         try:
             fd = build_finale_data(trip.state, trip.pack)
@@ -331,7 +335,7 @@ def watch(port: int, open_browser: bool = True):
     server = ThreadingHTTPServer(("127.0.0.1", port), ObserverHandler)
     url = f"http://127.0.0.1:{port}/"
     print(f"◉ 观战页开在 {url} （Ctrl+C 关闭）")
-    print("  另开一个终端让 AI 玩：uv run play.py cmd <命令>，页面每 2 秒自动刷新。")
+    print("  另开一个终端开始旅行：uv run play.py cmd <命令>，页面每 2 秒自动刷新。")
     if open_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:
@@ -344,7 +348,7 @@ def watch(port: int, open_browser: bool = True):
 
 def main():
     ap = argparse.ArgumentParser(prog="play.py", add_help=True,
-                                 description="卧游 · 给 AI 玩的真实旅行模拟")
+                                 description="卧游 · 真实城市的文字旅行模拟")
     sub = ap.add_subparsers(dest="sub")
 
     p_new = sub.add_parser("new", help="开新旅程")
@@ -366,14 +370,12 @@ def main():
     p_build.add_argument("--city", required=True)
     p_build.add_argument("--force", action="store_true", help="覆盖重建")
 
-    p_cmd = sub.add_parser("cmd", help="对当前旅程执行一条命令（AI 玩家接口）")
+    p_cmd = sub.add_parser("cmd", help="对当前旅程执行一条命令")
     p_cmd.add_argument("words", nargs=argparse.REMAINDER, help="命令内容")
 
     p_exp = sub.add_parser("export", help="导出游记")
 
-    p_report = sub.add_parser("report", help="生成旅行报告")
-    p_report.add_argument("--photos", choices=["text", "real", "both"], default="text",
-                          help="照片呈现方式（默认 text）")
+    p_report = sub.add_parser("report", help="重新显示旅程结算")
     p_report.add_argument("--trip", help="存档 id（默认当前 active）")
 
     p_watch = sub.add_parser("watch", help="浏览器观战页")
@@ -394,6 +396,7 @@ def main():
         trip = Trip.new("kyoto", days=args.days, seed=args.seed,
                         mate=args.mate or "")
         print(trip.opening())
+        print(_WATCH_HINT, file=sys.stderr)
         if args.repl:
             repl(trip)
     elif args.sub == "build":
@@ -436,7 +439,7 @@ def main():
         try:
             from woyou.report import build_finale_data, render_settlement_text
         except ImportError:
-            print("旅行报告模块（woyou/report.py）还没就位，暂时无法生成报告。")
+            print("结算模块（woyou/report.py）还没就位。")
             return
         try:
             fd = build_finale_data(trip.state, trip.pack)

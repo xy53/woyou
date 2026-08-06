@@ -111,7 +111,7 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
                 n = item["data"]
                 text = n.get("text", "") if isinstance(n, dict) else str(n)
                 note_lines = text.split("\n")
-                lines.append(f"> 你说：{note_lines[0]}")
+                lines.append(f"> 我说：{note_lines[0]}")
                 for extra in note_lines[1:]:
                     lines.append(f"> {extra}")
                 lines.append("")
@@ -165,6 +165,12 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
             for row in fd["dye_rows"]:
                 lines.append(row)
             lines.append("")
+
+    lines.append("---")
+    lines.append("")
+    lines.append("*这是旅途的回忆手帐——记下来的是留住的部分。*")
+    lines.append("*觉得哪里想改，直接打开这个文件动手就好。*")
+    lines.append("")
 
     out_path = out_path or (ROOT / "saves" / f"{state.trip_id}_游记.md")
     out_path.parent.mkdir(parents=True, exist_ok=True)

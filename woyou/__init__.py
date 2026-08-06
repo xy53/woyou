@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""卧游 (Woyou) —— 给 AI 玩的真实旅行模拟。
+"""卧游 (Woyou) —— 真实城市的文字旅行模拟。
 
 「澄怀观道，卧以游之。」
 
-给 AI 玩家的最小接口（与 fox-river-valley 同风格）：
+最小接口（与 fox-river-valley 同风格）：
 
     from woyou import new_trip, cmd
     print(new_trip("kyoto", days=5, mate="aman"))   # 开一段旅程

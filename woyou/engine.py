@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """卧游 · 游戏引擎。
 
-定稿设计原则（对 AI 玩家即「游戏规则」，对代码即「结算次序」）：
+定稿设计原则（对旅行者即「游戏规则」，对代码即「结算次序」）：
 - 全部文案在建城时写死进内容包，游玩零实时生成、零 API；
 - 资源只有三样身体性的：钱、体力、时刻。没有心情条，没有过程分数——
   日记本身就是心境，回味值只在终局出现一次；
@@ -173,8 +173,8 @@ class Trip:
 
         if st.ended and verb not in {"status", "journal", "wishes", "map",
                                      "export", "help", "share"}:
-            self.emit("旅程已经结束了。可以 journal 翻翻日记、export 导出游记，"
-                      "或者开一段新的旅程。")
+            self.emit("旅程已经结束了。可以 journal 翻翻日记、export 导出游记、"
+                      "share 做手帐分享页，或者开一段新的旅程。")
             return self._flush(raw)
 
         # 夜深禁行（sleep 与只读命令除外）
@@ -214,6 +214,11 @@ class Trip:
     def note(self, text: str):
         self.notes.append(text)
 
+    def _flush_notes(self):
+        if self.notes:
+            self.out.append("\n".join(self.notes))
+            self.notes.clear()
+
     def mark(self, m: str):
         self.marks.append(m)
 
@@ -247,7 +252,8 @@ class Trip:
         layers = loc.get("explore", [])
         t_clamped = min(st.t, 9)
         d = {
-            "day": st.day, "days": st.days_total, "t": st.t,
+            "day": min(st.day, st.days_total) if st.ended else st.day,
+            "days": st.days_total, "t": st.t,
             "slot": slot_of(t_clamped), "city": meta["city"],
             "loc": loc.get("name", st.loc),
             "money": st.money, "cur": meta["currency_symbol"],
@@ -262,8 +268,8 @@ class Trip:
             "here": {
                 "type": loc.get("type", ""),
                 "open": content.loc_open(loc, t_clamped),
-                "has_food": bool(content.dishes_at(self.pack, st.loc)),
-                "has_shop": bool(loc.get("shop")),
+                "has_food": bool(content.loc_open(loc, t_clamped) and content.dishes_at(self.pack, st.loc)),
+                "has_shop": bool(content.loc_open(loc, t_clamped) and loc.get("shop")),
                 "npc": len(content.npcs_at(self.pack, st.loc, t_clamped)),
                 "explore_left": max(0, len(layers) - vis.get("explored", 0)),
             },
@@ -1099,6 +1105,7 @@ class Trip:
             if k.startswith("chat:"):
                 del st.flags[k]
         if st.day > st.days_total:
+            self._flush_notes()
             self._finale(early=False)
             return
         weather = self._weather()
@@ -1117,7 +1124,7 @@ class Trip:
             packs = [p for p in content.list_packs() if p["slug"] != st.slug]
             hint = "、".join(f"{p['city']}" for p in packs) if packs else "（还没有别的城市内容包）"
             self.emit(f"去哪座城？fly <城市名>。已经备好的：{hint}\n"
-                      f"没备好的城市也可以直接说，我会现场做调研（需要 DeepSeek API，约一两分钟）。")
+                      f"没备好的城市需要先 build 生成内容包。")
             return
         dest_pack = self._resolve_city_pack(arg)
         if dest_pack is None:
@@ -1292,6 +1299,10 @@ class Trip:
             return len(st.stories_heard) >= int(check.get("count", 1))
         if ctype == "gem":
             return st.gems >= int(check.get("count", 1))
+        if ctype == "discovery":
+            starter_ids = {l["id"] for l in self.pack["locations"] if l.get("starter")}
+            revealed = sum(1 for lid in st.box()["known_locs"] if lid not in starter_ids)
+            return (st.gems + revealed) >= int(check.get("count", 1))
         if ctype == "npc":
             return check.get("id") in st.box()["met"]
         for r in self.records:
@@ -1381,4 +1392,4 @@ class Trip:
             st.flags[flag] = True
             seen.append(best)
             st.flags["_seen_trivia"] = seen
-            self.emit(f"脑子里翻出一句来——{best}")
+            self.emit(f"路边的说明牌写着——{best}")

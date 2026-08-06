@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """卧游 · 手帐分享页：把旅行日记与成色合成一份自给自足的 HTML 手帐。
 
-给 AI 玩家做好后，可以自愿分享给人看——这是一份属于旅行者的手帐，
-不是报告，不是考卷，是一段走过的路的私人记录。
+这是一份属于旅行者的手帐，不是报告，不是考卷，是一段走过的路的私人记录。
+做好后可以分享给朋友看，也可以只留给自己。
 
 公开 API：
     make_share_html(state, pack, closing_message="") -> str
     save_share_html(state, pack, closing_message="") -> Path
 """
+import base64
 import html as _html
 from pathlib import Path
 
@@ -58,6 +59,90 @@ def _days_lived(state) -> int:
     if state.day > state.days_total:
         return max(1, state.day - 1)
     return max(1, state.day)
+
+
+# ---------------------------------------------------------------- photo helpers
+
+def _load_photo_manifest(slug: str) -> dict:
+    """content/<slug>/photos/manifest.json → {loc_id: row}."""
+    path = CONTENT_DIR / slug / "photos" / "manifest.json"
+    if not path.exists():
+        return {}
+    try:
+        data = read_json(path)
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    out = {}
+    for key, val in data.items():
+        if isinstance(val, dict) and val.get("file"):
+            out[key] = val
+    return out
+
+
+def _photo_gate(row: dict, slot: str, weather: str) -> bool:
+    """时辰档案门：照片的时段/天气能不能代表这次经历。"""
+    slots = row.get("compatible_slots")
+    if isinstance(slots, (list, tuple)) and slot not in slots:
+        return False
+    hint = row.get("weather_hint")
+    if hint:
+        wet = any(x in (weather or "") for x in ("雨", "雪"))
+        if hint == "晴" and wet:
+            return False
+        if hint in ("雨", "雪") and not wet:
+            return False
+    season = row.get("season_months")
+    if season:
+        try:
+            a, b = int(season[0]), int(season[1])
+            # no month info in game state → pass through
+        except (TypeError, ValueError, IndexError):
+            pass
+    return True
+
+
+def _embed_photo(slug: str, filename: str, max_w: int = 640) -> str:
+    """Read a photo and return a data:image/jpeg;base64,... URI."""
+    path = CONTENT_DIR / slug / "photos" / filename
+    if not path.exists():
+        return ""
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return ""
+    try:
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(raw))
+        if img.width > max_w:
+            ratio = max_w / img.width
+            img = img.resize((max_w, int(img.height * ratio)), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=75, optimize=True)
+        raw = buf.getvalue()
+    except Exception:
+        pass
+    b64 = base64.b64encode(raw).decode("ascii")
+    return f"data:image/jpeg;base64,{b64}"
+
+
+def _polaroid_rot(s: str) -> float:
+    """Deterministic small rotation from a string (-2 to +2 degrees)."""
+    v = sum(ord(c) for c in s) % 9
+    return (v - 4) * 0.6
+
+
+def _loc_id_map(pack) -> dict:
+    """Location name → location id."""
+    out = {}
+    for loc in pack.get("locations", []):
+        name = loc.get("name", "")
+        lid = loc.get("id", "")
+        if name and lid:
+            out[name] = lid
+    return out
 
 
 # ---------------------------------------------------------------- type map
@@ -231,6 +316,33 @@ body{
   font-size:1.02em;line-height:2;white-space:pre-wrap;
 }
 
+/* ---- polaroid photos ---- */
+.polaroid{
+  background:#FFFEFA;padding:6px 6px 22px;
+  max-width:300px;margin:.8em auto .4em;
+  box-shadow:2px 3px 14px rgba(60,50,35,.12),0 1px 3px rgba(60,50,35,.07);
+}
+.polaroid img{width:100%;display:block}
+.polaroid-cap{
+  text-align:center;font-size:.68em;color:#8B7D6B;margin-top:6px;
+  font-family:STKaiti,KaiTi,"楷体","AR PL UKai CN",cursive;
+}
+@media(prefers-color-scheme:dark){
+  .polaroid{background:#E8E0D4;box-shadow:2px 3px 14px rgba(0,0,0,.35)}
+  .polaroid-cap{color:#5A4E3E}
+}
+:root[data-theme="dark"] .polaroid{background:#E8E0D4;box-shadow:2px 3px 14px rgba(0,0,0,.35)}
+:root[data-theme="dark"] .polaroid-cap{color:#5A4E3E}
+:root[data-theme="light"] .polaroid{background:#FFFEFA}
+:root[data-theme="light"] .polaroid-cap{color:#8B7D6B}
+
+/* ---- photo credits ---- */
+.credits{
+  margin-top:2.2em;padding-top:1em;border-top:1px solid var(--border);
+  font-size:.65em;color:var(--text-muted);line-height:1.8;
+}
+.credits-title{font-size:1.1em;margin-bottom:.3em;color:var(--text-sec)}
+
 /* ---- print ---- */
 @media print{
   body{background:#fff!important;color:#000!important}
@@ -289,6 +401,13 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
         grade = state.score.get("grade", "")
     if not grade:
         grade = result.get("grade", "")
+
+    # ---- photos ----
+    slug = meta.get("slug", "")
+    photo_manifest = _load_photo_manifest(slug) if slug else {}
+    loc_ids = _loc_id_map(pack)
+    photo_cache = {}   # loc_id → data URI (loaded lazily)
+    photo_credits = []  # [(title, author, license), ...]
 
     # ---- companion ----
     companions = _load_companions()
@@ -426,11 +545,40 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
                 if etype != "心愿" and text:
                     h.append(f'<div class="entry-text">{_esc(text)}</div>')
                 h.append("</div>")
+
+                # polaroid photo for 风景 entries
+                if etype == "风景" and photo_manifest:
+                    loc_name = (e.get("loc") or "").strip()
+                    loc_id = loc_ids.get(loc_name, "")
+                    row = photo_manifest.get(loc_id)
+                    day_weather = state.weather_by_day.get(
+                        str(e.get("day", 0)), "")
+                    if row and _photo_gate(row, e.get("slot", ""),
+                                           day_weather):
+                        if loc_id not in photo_cache:
+                            photo_cache[loc_id] = _embed_photo(
+                                slug, row["file"])
+                        data_uri = photo_cache[loc_id]
+                        if data_uri:
+                            rot = _polaroid_rot(loc_id)
+                            alt = _esc(row.get("scene_note", loc_name))
+                            cap = row.get("title") or loc_name
+                            h.append(
+                                f'<div class="polaroid" '
+                                f'style="transform:rotate({rot:.1f}deg)">'
+                                f'<img src="{data_uri}" alt="{alt}">'
+                                f'<div class="polaroid-cap">'
+                                f'{_esc(cap)}</div></div>')
+                            credit = (cap,
+                                      row.get("author", ""),
+                                      row.get("license", ""))
+                            if credit not in photo_credits:
+                                photo_credits.append(credit)
             elif kind == "note":
                 n = data
                 nt = n.get("text", "") if isinstance(n, dict) else str(n)
                 h.append(f'<div class="margin-note">'
-                         f'你说：「{_esc(nt)}」</div>')
+                         f'我说：「{_esc(nt)}」</div>')
 
         h.append("</section>")
 
@@ -497,6 +645,19 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
                 h.append("</div>")
         h.append("</div>")
     h.append("</section>")
+
+    # ======== Photo credits ========
+    if photo_credits:
+        h.append('<section class="credits">')
+        h.append('<p class="credits-title">照片</p>')
+        for title, author, lic in photo_credits:
+            parts = [_esc(title)]
+            if author:
+                parts.append(f"摄影：{_esc(author)}")
+            if lic:
+                parts.append(_esc(lic))
+            h.append(f'<p>{" · ".join(parts)}</p>')
+        h.append("</section>")
 
     # ======== Closing message ========
     note_text = (closing_message or "").strip()

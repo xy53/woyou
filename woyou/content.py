@@ -154,8 +154,9 @@ def validate_pack(pack: dict) -> list:
         chk = w.get("check")
         if isinstance(chk, dict):
             if chk.get("type") not in {"look", "visit", "eat", "story", "photo",
-                                       "buy", "gem", "explore", "npc", "rest",
-                                       "listen", "join", "wander", "postcard"}:
+                                       "buy", "gem", "discovery", "explore",
+                                       "npc", "rest", "listen", "join",
+                                       "wander", "postcard"}:
                 errs.append(f"{where}.check.type 非法: {chk.get('type')}")
         else:
             errs.append(f"{where}.check 应为对象")
