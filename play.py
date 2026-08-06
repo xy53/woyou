@@ -138,6 +138,10 @@ _PHOTO_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"
                 ".webp": "image/webp", ".gif": "image/gif"}
 
 
+_NOTE_CMDS = re.compile(r"^(note|postcard|share)\b", re.I)
+_POSTCARD_MSG = re.compile(r"背面你只写了一句：「[^」]*」")
+
+
 def _observer_data() -> dict:
     tid = active_trip_id()
     if not tid:
@@ -174,15 +178,37 @@ def _observer_data() -> dict:
         if locs:
             map_data.append({"district": dist["name"], "locs": locs})
 
+    share_iter = iter(getattr(st, "share_messages", None) or [])
+    next_share = next(share_iter, None)
+
     log = []
     for e in st.log[-40:]:
         text = e.get("out", "")
         lines = [ln for ln in text.split("\n") if not ln.startswith("STATE {")]
-        log.append({
+        cmd_raw = e.get("cmd", "")
+        if _NOTE_CMDS.match(cmd_raw):
+            cmd_display = cmd_raw.split()[0]
+        else:
+            cmd_display = cmd_raw
+        cleaned = "\n".join(lines).strip()
+        if cmd_display == "postcard":
+            cleaned = _POSTCARD_MSG.sub("写了什么，只有收信人知道。", cleaned)
+        entry = {
             "day": e.get("day"), "slot": slot_of(e.get("t", 0)),
-            "cmd": e.get("cmd", ""), "text": "\n".join(lines).strip(),
-            "note": e.get("note"),
-        })
+            "cmd": cmd_display, "text": cleaned,
+        }
+        if cmd_display == "share" and next_share is not None:
+            entry["share_text"] = next_share["text"]
+            next_share = next(share_iter, None)
+        log.append(entry)
+
+    if st.ended and log:
+        last = log[-1]
+        text = last.get("text", "")
+        marker = "旅 程 结 算"
+        idx = text.find(marker)
+        if idx >= 0:
+            last["text"] = text[:idx].rstrip()
 
     route_names = []
     for s in st.route:
@@ -203,7 +229,10 @@ def _observer_data() -> dict:
         "energy": st.energy,
         "mate": MATES.get(st.mate, "").split("（")[0] if st.mate else None,
         "route": route_names, "ended": st.ended, "score": st.score,
-        "journal": st.journal, "wishes": [{"text": w["text"], "done": w["done"]}
+        "journal": [{"type": e.get("type"), "title": e.get("title"),
+                     "day": e.get("day"), "slot": e.get("slot"),
+                     "loc": e.get("loc")} for e in st.journal],
+        "wishes": [{"text": w["text"], "done": w["done"]}
                                           for w in st.wishes],
         "gems": st.gems, "stories": len(st.stories_heard),
         "map": map_data, "log": log,
@@ -213,7 +242,6 @@ def _observer_data() -> dict:
         from woyou.report import build_finale_data
         fd = build_finale_data(st, pack)
         d["finale"] = {
-            "grade_text": fd["grade_text"],
             "color_name": fd["color_name"],
             "color_line": fd["color_line"],
             "color_hex": fd["color_hex"],
@@ -227,6 +255,7 @@ def _observer_data() -> dict:
             "bought": len(fd["bought"]),
             "days": fd["days"],
         }
+        d["share_messages"] = [m["text"] for m in (st.share_messages or [])]
 
     return d
 
@@ -334,7 +363,7 @@ class ObserverHandler(BaseHTTPRequestHandler):
 def watch(port: int, open_browser: bool = True):
     server = ThreadingHTTPServer(("127.0.0.1", port), ObserverHandler)
     url = f"http://127.0.0.1:{port}/"
-    print(f"◉ 观战页开在 {url} （Ctrl+C 关闭）")
+    print(f"◉ 观战页开在 {url} （仅限本机访问，Ctrl+C 关闭）")
     print("  另开一个终端开始旅行：uv run play.py cmd <命令>，页面每 2 秒自动刷新。")
     if open_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()

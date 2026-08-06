@@ -10,7 +10,7 @@ TYPE_MARK = {"风景": "🏞", "风味": "🍜", "人物": "👤", "故事": "�
 
 def add_entry(state, etype: str, title: str, text: str,
               loc_name: str = "", city: str = "",
-              seq: int = 0) -> dict:
+              seq: int = 0, via: str = "") -> dict:
     entry = {
         "seq": seq,
         "day": state.day,
@@ -21,6 +21,8 @@ def add_entry(state, etype: str, title: str, text: str,
         "title": title,
         "text": text.strip(),
     }
+    if via:
+        entry["via"] = via
     state.journal.append(entry)
     return entry
 
@@ -30,8 +32,11 @@ def journal_brief(state, last: int = 12) -> str:
         return "日记本还是空的。去看看、走走、和人聊聊吧。"
     lines = []
     total = len(state.journal)
-    entries = state.journal[-last:]
-    if total > last:
+    if state.ended:
+        entries = state.journal
+    else:
+        entries = state.journal[-last:]
+    if not state.ended and total > last:
         lines.append(f"（共 {total} 条，只列最近 {last} 条；export 导出的游记是全的）")
     for e in entries:
         mark = TYPE_MARK.get(e["type"], "·")
@@ -72,10 +77,20 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
     items = []
     for e in state.journal:
         items.append({"kind": "entry", "seq": e.get("seq", 0), "day": e["day"], "data": e})
+    end_seq = None
+    if state.ended and state.journal:
+        end_seq = max(e.get("seq", 0) for e in state.journal)
     for n in raw_notes:
-        # Only include notes from during the trip (ignore post-trip notes in old saves)
-        if not state.ended or n.get("day", 0) <= min(state.day, state.days_total):
-            items.append({"kind": "note", "seq": n.get("seq", 0), "day": n["day"], "data": n})
+        if state.ended:
+            n_seq = n.get("seq", 0)
+            if end_seq is not None and n_seq > 0 and n_seq > end_seq:
+                continue
+            if n_seq == 0 and n.get("day", 0) > min(state.day, state.days_total):
+                continue
+        items.append({"kind": "note", "seq": n.get("seq", 0), "day": n["day"], "data": n})
+
+    for sm in (getattr(state, "share_messages", None) or []):
+        items.append({"kind": "share", "seq": sm.get("seq", 0), "day": sm["day"], "data": sm})
 
     items.sort(key=lambda x: (x["day"], x["seq"]))
 
@@ -106,6 +121,11 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
                 lines.append(f"**{mark} {e['slot']} · {e['title']}**{where}")
                 lines.append("")
                 lines.append(e["text"])
+                if e.get("message"):
+                    lines.append(f"背面你只写了一句：「{e['message']}」")
+                lines.append("")
+            elif item["kind"] == "share":
+                lines.append(f"🖋 给ta的话：{item['data']['text']}")
                 lines.append("")
             elif item["kind"] == "note":
                 n = item["data"]
@@ -146,10 +166,6 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
         lines.append("## 旅程末页")
         lines.append("")
 
-        if fd["grade_text"]:
-            lines.append(f"*{fd['grade_text']}*")
-            lines.append("")
-
         if fd["color_name"]:
             lines.append("这趟旅行洗出来，是一种颜色")
             lines.append(f"**{fd['color_name']}**")
@@ -165,6 +181,9 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
             for row in fd["dye_rows"]:
                 lines.append(row)
             lines.append("")
+
+        lines.append("*一期一会。*")
+        lines.append("")
 
     lines.append("---")
     lines.append("")

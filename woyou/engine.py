@@ -237,6 +237,14 @@ class Trip:
             entry["note"] = self._player_note
         st.log.append(entry)
         st.log = st.log[-60:]
+        loc_obj = self.pack["_loc"].get(st.loc, {})
+        loc_name = loc_obj.get("name", st.loc)
+        if loc_name:
+            fp = st.footprints
+            day_key = str(st.day)
+            chain = fp.setdefault(day_key, [])
+            if not chain or chain[-1] != loc_name:
+                chain.append(loc_name)
         if self.autosave:
             st.save()
         return text
@@ -310,13 +318,14 @@ class Trip:
         self.note(f"💴 -{fmt_money(meta['currency_symbol'], amount)}（{why}）")
         return True
 
-    def _journal(self, etype, title, text, loc_name=""):
+    def _journal(self, etype, title, text, loc_name="", via=""):
         meta = self.pack["meta"]
         self.state.timeline_seq += 1
-        journal.add_entry(self.state, etype, title, text,
-                          loc_name=loc_name, city=meta["city"],
-                          seq=self.state.timeline_seq)
+        entry = journal.add_entry(self.state, etype, title, text,
+                                  loc_name=loc_name, city=meta["city"],
+                                  seq=self.state.timeline_seq, via=via)
         self.note(f"✎ 日记·{etype}「{title}」")
+        return entry
 
     # ---------- 只读命令 ----------
     def _cmd_help(self, arg):
@@ -464,11 +473,20 @@ class Trip:
 
     def _cmd_share(self, arg):
         st = self.state
+        if arg:
+            st.timeline_seq += 1
+            st.share_messages.append({
+                "day": st.day, "seq": st.timeline_seq, "text": arg,
+            })
         if not st.ended:
-            self.emit("旅程还没结束呢。等旅行结束之后，再来做手帐吧。")
+            if arg:
+                self.emit("记下了。")
+            else:
+                self.emit("旅程还没结束呢。等旅行结束之后，再来做手帐吧。"
+                          "不过现在就可以 share <想说的话> 先留一句。")
             return
         from . import share
-        path = share.save_share_html(st, self.pack, closing_message=arg)
+        path = share.save_share_html(st, self.pack)
         self.emit(f"手帐已经做好了：{path}")
 
     def _cmd_note(self, arg):
@@ -585,6 +603,7 @@ class Trip:
         vis = box["visited"].setdefault(st.loc, {"looked": [], "explored": 0, "photos": []})
         key = f"{slot}|{weather}"
         text = content.pick_text(loc.get("look", {}), slot, weather)
+        first_look = not vis["looked"]
         if key in vis["looked"]:
             rng = stable_rng(st.seed, "lookagain", st.day, st.t, len(st.log))
             self.emit(text)
@@ -593,6 +612,8 @@ class Trip:
             vis["looked"].append(key)
             self.emit(text)
             self._ambient_trivia(loc)
+        if first_look:
+            self._journal("风景", loc["name"], text, loc["name"], via="look")
         self._habit_note(loc, vis, slot)
         if not self._mate_moment():
             rainy = any(x in weather for x in ("雨", "雪"))
@@ -631,6 +652,7 @@ class Trip:
             return
         vis = box["visited"].setdefault(st.loc, {"looked": [], "explored": 0, "photos": []})
         heard = vis.setdefault("heard", [])
+        first_listen = not heard
         key = f"{slot}|{weather}"
         text = content.pick_text(sounds, slot, weather)
         self.emit("你闭上眼。\n" + text)
@@ -639,6 +661,8 @@ class Trip:
             self.emit(rng.choice(LISTEN_AGAIN))
         else:
             heard.append(key)
+        if first_listen:
+            self._journal("风景", f"{loc['name']}的声音", text, loc["name"], via="listen")
         self._mate_ambient("listen", loc["type"])
         self.record(kind="listen", loc=st.loc, slot=slot, weather=weather)
 
@@ -680,6 +704,9 @@ class Trip:
             title = layer.get("title", f"{loc['name']}的角落")
             self._journal("意外", title, layer["text"], loc["name"])
             self.mark("gem")
+        else:
+            title = layer.get("title", f"{loc['name']}·深处")
+            self._journal("风景", title, layer["text"], loc["name"], via="explore")
         if vis["explored"] >= len(layers):
             st.flags[f"mastered:{st.slug}:{st.loc}"] = True
             mastered_text = loc.get("mastered") or MASTERED_LINES[0]
@@ -727,6 +754,8 @@ class Trip:
             i, w = rng.choice(fresh)
             seen.append(i)
             self.emit(w["text"])
+            title = w.get("title", f"漫步·{loc['name']}")
+            self._journal("风景", title, w["text"], loc["name"], via="wander")
         elif pool:
             _, w = rng.choice(pool)
             self.emit(w["text"])
@@ -960,11 +989,16 @@ class Trip:
             flavor = raw_flavor
         if arg:
             body = f"背面你只写了一句：「{arg}」"
+            jtext = flavor
         else:
             body = "背面想了半天，最后只画了个小小的太阳。"
+            jtext = flavor + body
         self.emit(f"{flavor}{body}投进邮筒的那一下，旅行忽然有了收信人。")
-        self._journal("纪念", f"寄自{meta['city']}的明信片",
-                      f"{flavor}{body}", self.pack["_loc"][st.loc]["name"])
+        entry = self._journal("纪念", f"寄自{meta['city']}的明信片",
+                              jtext, self.pack["_loc"][st.loc]["name"],
+                              via="postcard")
+        if arg:
+            entry["message"] = arg
         self.record(kind="postcard")
 
     def _cmd_rest(self, arg):
@@ -1061,6 +1095,11 @@ class Trip:
         box = st.box()
         loc = self.pack["_loc"][st.loc]
         slot, weather = slot_of(st.t), self._weather()
+        if not content.loc_open(loc, min(st.t, 9)):
+            self.emit(f"{loc['name']}还没开（{content.hours_text(loc)}）。"
+                      "门关着，没什么好拍的。")
+            self.record(kind="photo", loc=st.loc, slot=slot, weather=weather)
+            return
         vis = box["visited"].setdefault(st.loc, {"looked": [], "explored": 0, "photos": []})
         key = f"{slot}|{weather}"
         if key in vis["photos"]:
@@ -1070,7 +1109,7 @@ class Trip:
         scene = content.pick_text(loc.get("photo") or loc.get("look", {}), slot, weather)
         self.emit(f"你举起相机。\n{scene}")
         caption = f"\n你在底下写：「{arg}」" if arg else ""
-        self._journal("风景", f"{loc['name']}·{slot}", scene + caption, loc["name"])
+        self._journal("风景", f"{loc['name']}·{slot}", scene + caption, loc["name"], via="photo")
         self._mate_ambient("photo")
         # 带相机的旅伴（小柒），总有一张会落在你身上
         if (self.mate and self.mate.get("camera")
@@ -1098,16 +1137,17 @@ class Trip:
         if broke:
             self.emit("（住宿钱不太凑手，老板娘摆摆手让你先记着。明天得省着点了。）")
 
+        if st.day >= st.days_total:
+            self._flush_notes()
+            self._finale(early=False)
+            return
+
         st.day += 1
         st.t = 0
         st.energy = 100
         for k in list(st.flags):
             if k.startswith("chat:"):
                 del st.flags[k]
-        if st.day > st.days_total:
-            self._flush_notes()
-            self._finale(early=False)
-            return
         weather = self._weather()
         rng = stable_rng(st.seed, "morning", st.day)
         breakfast = rng.choice([

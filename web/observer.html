@@ -65,7 +65,7 @@
     color: #5c4d1a; transform: rotate(-0.6deg);
     box-shadow: 2px 3px 0 #0001; margin: -4px 6px 2px 0;
   }
-  .bubble::before { content: "🗨 旅人自语"; display: block; font-size: 10px;
+  .bubble::before { content: "🖋 给你的话"; display: block; font-size: 10px;
                     letter-spacing: 2px; color: #a08c3a; margin-bottom: 3px; }
   aside section {
     background: var(--card); border: 1px solid var(--line); border-radius: 4px;
@@ -97,7 +97,12 @@
     font-size: 16px; letter-spacing: 6px; color: var(--ink2);
     border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px;
   }
-  .settle-grade { font-size: 15px; color: var(--ink); margin-bottom: 14px; line-height: 1.8; }
+  .settle-farewell { font-size: 14px; color: var(--ink2); margin-top: 16px; }
+  .disconnected {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    background: var(--accent); color: #fff; text-align: center;
+    padding: 6px 0; font-size: 13px; letter-spacing: 2px;
+  }
   .settle-intro { font-size: 13px; color: var(--ink2); margin-bottom: 8px; }
   .settle-swatch {
     width: 100px; height: 100px; border-radius: 8px;
@@ -162,11 +167,6 @@ function renderText(t) {
 
 function renderSettle(fin) {
   let h = '<div class="settle-title">旅 程 结 算</div>';
-
-  if (fin.grade_text) {
-    h += `<div class="settle-grade">${esc(fin.grade_text)}</div>`;
-  }
-
   h += '<div class="settle-intro">这趟旅行洗出来，是一种颜色</div>';
 
   if (fin.color_hex) {
@@ -210,7 +210,21 @@ function renderSettle(fin) {
     h += '</div>';
   }
 
+  h += '<div class="settle-farewell">一期一会。</div>';
   return h;
+}
+
+let _failCount = 0;
+function _setDisconnected(on) {
+  let el = document.getElementById("disconnected");
+  if (on && !el) {
+    el = document.createElement("div");
+    el.id = "disconnected"; el.className = "disconnected";
+    el.textContent = "与服务器的连接已断开";
+    document.body.prepend(el);
+  } else if (!on && el) {
+    el.remove();
+  }
 }
 
 async function tick() {
@@ -218,7 +232,13 @@ async function tick() {
   try {
     const r = await fetch("/data", {cache: "no-store"});
     data = await r.json();
-  } catch (e) { return; }
+    _failCount = 0;
+    _setDisconnected(false);
+  } catch (e) {
+    _failCount++;
+    if (_failCount >= 2) _setDisconnected(true);
+    return;
+  }
   const payload = JSON.stringify(data);
   if (payload === lastPayload) return;
   lastPayload = payload;
@@ -232,8 +252,11 @@ async function tick() {
   document.getElementById("empty").style.display = "none";
 
   const route = (data.route || []).join(" → ");
+  const timeInfo = data.ended
+    ? "旅程已结束"
+    : `第${data.day}/${data.days_total}天 · ${esc(data.slot)} · ${esc(data.weather)}`;
   document.getElementById("where").innerHTML =
-    `<b>${esc(data.city)}</b>${esc(data.country)} · 第${data.day}/${data.days_total}天 · ${esc(data.slot)} · ${esc(data.weather)}` +
+    `<b>${esc(data.city)}</b>${esc(data.country)} · ${timeInfo}` +
     (data.mate ? ` · 与${esc(data.mate)}同行` : " · 独行") +
     (route && data.route.length > 1 ? `<div class="route">足迹：${esc(route)}</div>` : "");
 
@@ -245,13 +268,16 @@ async function tick() {
 
   const stream = document.getElementById("stream");
   const nearBottom = stream.scrollHeight - stream.scrollTop - stream.clientHeight < 80;
-  stream.innerHTML = (data.log || []).map(e => {
+  let streamHtml = (data.log || []).map(e => {
+    if (e.share_text) {
+      return `<div class="bubble">${esc(e.share_text)}</div>`;
+    }
     let html = `<div class="turn">
       <div class="meta">第${e.day}天 · ${esc(e.slot)}<span class="cmd">${esc(e.cmd)}</span></div>
       <div class="text">${renderText(e.text)}</div></div>`;
-    if (e.note) html += `<div class="bubble">${esc(e.note)}</div>`;
     return html;
   }).join("");
+  stream.innerHTML = streamHtml;
   if (nearBottom) stream.scrollTop = stream.scrollHeight;
 
   document.getElementById("map").innerHTML = (data.map || []).map(d =>

@@ -160,10 +160,23 @@ def _days_lived(state) -> int:
 # ---------------------------------------------------------------- 事实提取
 
 def _footprints(state) -> dict:
-    """{day: [地点名, ...]}——当天到过的地点顺序（log 为主，日记补全旧日子）。
+    """{day: [地点名, ...]}——当天到过的地点顺序。
 
-    sleep 的 STATE 显示的是新一天的起始位置，记录为次日链头。
+    优先使用 state.footprints（独立持久化，不受 log 容量限制）；
+    旧存档没有该字段时，回落到 log 解析 + 日记补全。
     """
+    fp = getattr(state, "footprints", None) or {}
+    if fp:
+        order = {int(k): list(v) for k, v in fp.items()}
+        for e in state.journal:
+            loc = (e.get("loc") or "").strip()
+            if not loc:
+                continue
+            lst = order.setdefault(e["day"], [])
+            if loc not in lst:
+                lst.append(loc)
+        return order
+
     order = {}
     for e in state.log:
         day = e.get("day")
@@ -261,7 +274,25 @@ def _recognitions(state, pack) -> list:
 
 
 def _notes(state) -> list:
-    """玩家自语（按发生顺序，逐字）。"""
+    """玩家自语（按发生顺序，逐字）。优先读独立存储，旧存档回落到 log。"""
+    pn = getattr(state, "player_notes", None) or []
+    if pn:
+        end_seq = None
+        if state.ended and state.journal:
+            end_seq = max(e.get("seq", 0) for e in state.journal)
+        out = []
+        for n in pn:
+            if not isinstance(n, dict):
+                continue
+            if state.ended:
+                n_seq = n.get("seq", 0)
+                if end_seq is not None and n_seq > 0 and n_seq > end_seq:
+                    continue
+                if n_seq == 0 and n.get("day", 0) > min(state.day, state.days_total):
+                    continue
+            out.append({"day": n.get("day"), "slot": n.get("slot", slot_of(n.get("t", 0))),
+                        "text": n.get("text", "")})
+        return out
     out = []
     for e in state.log:
         note = (e.get("note") or "").strip()
@@ -972,6 +1003,22 @@ def render_settlement_text(fd: dict) -> str:
     mate_str = f" · 与{fd['mate_name']}同行" if fd["mate_name"] else " · 独行"
     lines.append(f"{city_str} · {fd['days']}天{mate_str}")
 
+    # Zero-action trip: no journal entries at all
+    has_journal = bool(fd.get("score", {}).get("trickle", 0))
+    if not has_journal:
+        lines.append("")
+        lines.append("────── 显影 ──────")
+        lines.append("")
+        lines.append("这趟旅行洗出来，是一种颜色")
+        lines.append(fd.get("color_name") or "素色")
+        if fd.get("color_line"):
+            lines.append(fd["color_line"])
+        lines.append("")
+        lines.append("一期一会。")
+        lines.append("")
+        lines.append("（journal 翻日记 · export 导出游记 · share 做手帐分享页）")
+        return "\n".join(lines)
+
     # Factual summary — zero items omitted entirely
     if fd["places"]:
         lines.append(f"走过 {len(fd['places'])} 处地方")
@@ -993,9 +1040,6 @@ def render_settlement_text(fd: dict) -> str:
     if fd["color_name"]:
         lines.append("")
         lines.append("────── 显影 ──────")
-        if fd["grade_text"]:
-            lines.append("")
-            lines.append(fd["grade_text"])
         lines.append("")
         lines.append("这趟旅行洗出来，是一种颜色")
         lines.append(fd["color_name"])
@@ -1010,6 +1054,9 @@ def render_settlement_text(fd: dict) -> str:
         lines.append("")
         for row in fd["dye_rows"]:
             lines.append(row)
+
+    lines.append("")
+    lines.append("一期一会。")
 
     # Hints
     lines.append("")

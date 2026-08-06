@@ -40,12 +40,7 @@ SHORT_OF = {
 POINT_PER_DIM = 12          # 每种成色的定价：都一样，因为它们都只发生一次
 TRICKLE_CAP = 15            # 日记涓滴的封顶：量只能贡献这么多
 
-GRADES = [
-    (30,  "走马观花——但至少，马和花都是真的。"),
-    (60,  "不虚此行。"),
-    (105, "满载而归，行李超重的是回忆。"),
-    (None, "一期一会。这一程，值得讲很多年。"),
-]
+GRADES = []
 
 
 # ---------------------------------------------------------------- 判定
@@ -95,7 +90,8 @@ def _has_bought(state, pack):
 
 
 def _has_photo(state, pack):
-    return any(e.get("type") == "风景" for e in getattr(state, "journal", []) or [])
+    return any(e.get("type") == "风景" and e.get("via", "photo") == "photo"
+               for e in getattr(state, "journal", []) or [])
 
 
 def _has_wish(state, pack):
@@ -138,10 +134,7 @@ CHECKS = {
 
 
 def grade_of(score: int) -> str:
-    for cut, text in GRADES:
-        if cut is None or score < cut:
-            return text
-    return GRADES[-1][1]
+    return ""
 
 
 def compute(state, pack=None) -> dict:

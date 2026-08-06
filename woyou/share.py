@@ -5,15 +5,15 @@
 做好后可以分享给朋友看，也可以只留给自己。
 
 公开 API：
-    make_share_html(state, pack, closing_message="") -> str
-    save_share_html(state, pack, closing_message="") -> Path
+    make_share_html(state, pack) -> str
+    save_share_html(state, pack) -> Path
 """
 import base64
 import html as _html
 from pathlib import Path
 
 from . import score as scoring
-from .util import CONTENT_DIR, SAVE_DIR, slot_of, read_json
+from .util import CONTENT_DIR, SAVE_DIR, read_json
 
 
 # ---------------------------------------------------------------- helpers
@@ -258,6 +258,15 @@ body{
   font-size:.85em;color:var(--text-sec);background:var(--note-bg);
   padding:.45em .9em;margin:.4em 0 .8em 1.2em;border-radius:3px;
 }
+/* ---- share messages (pencil handwriting) ---- */
+.share-note{
+  font-family:STKaiti,KaiTi,"楷体","AR PL UKai CN",cursive;
+  font-size:.88em;color:#5c4d1a;
+  padding:.3em 0 .3em .6em;margin:.3em 0 .6em 0;
+  border-left:2px solid #c8b96e;
+  opacity:.85;
+}
+.share-note::before{content:"🖋 ";font-size:.8em}
 
 /* ---- section titles ---- */
 .section-title{
@@ -368,7 +377,7 @@ body{
 
 # ---------------------------------------------------------------- HTML builder
 
-def make_share_html(state, pack, closing_message: str = "") -> str:
+def make_share_html(state, pack) -> str:
     """Generate a self-contained HTML travel journal page.
 
     Reads state (TripState) and pack (city content dict), computes the
@@ -396,12 +405,6 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
     color_line = color.get("line", "")
     text_on_color = "#2C2416" if _is_light(color_hex) else "#FDFAF3"
 
-    grade = ""
-    if state.score:
-        grade = state.score.get("grade", "")
-    if not grade:
-        grade = result.get("grade", "")
-
     # ---- photos ----
     slug = meta.get("slug", "")
     photo_manifest = _load_photo_manifest(slug) if slug else {}
@@ -425,26 +428,6 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
     for e in state.journal:
         jbd.setdefault(e["day"], []).append(e)
 
-    # ---- extract player notes ----
-    raw_notes = getattr(state, "player_notes", None) or []
-    if not raw_notes:
-        # backward compat: old saves without player_notes
-        for e in state.log:
-            n = (e.get("note") or "").strip()
-            if n:
-                raw_notes.append({
-                    "seq": 0,
-                    "day": e.get("day", 0),
-                    "slot": slot_of(e.get("t", 0)),
-                    "text": n,
-                })
-
-    notes_pool = raw_notes
-    nbd = {}
-    for n in notes_pool:
-        slot = n.get("slot") or slot_of(n.get("t", 0))
-        nbd.setdefault((n["day"], slot), []).append(n["text"])
-
     # ---- footprints per day (from journal location names) ----
     foot = {}
     for e in state.journal:
@@ -455,8 +438,7 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
                 foot[e["day"]].append(loc)
 
     # ---- all days with any content ----
-    note_days = {n["day"] for n in notes_pool}
-    all_days = sorted(set(jbd.keys()) | note_days)
+    all_days = sorted(jbd.keys())
 
     # ---- assemble HTML ----
     h = []
@@ -487,14 +469,14 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
     # ======== Daily pages ========
     for d in all_days:
         entries_for_day = jbd.get(d, [])
-        notes_for_day = [n for n in notes_pool if n.get("day") == d]
 
         # Build unified timeline sorted by seq
         timeline = []
         for e in entries_for_day:
             timeline.append(("entry", e.get("seq", 0), e))
-        for n in notes_for_day:
-            timeline.append(("note", n.get("seq", 0), n))
+        for sm in (state.share_messages or []):
+            if sm.get("day") == d:
+                timeline.append(("share", sm.get("seq", 0), sm))
         timeline.sort(key=lambda x: x[1])
 
         h.append('<section class="day-page">')
@@ -523,6 +505,10 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
         h.append("</div>")
 
         for kind, seq, data in timeline:
+            if kind == "share":
+                h.append(f'<div class="share-note">'
+                         f'给你的话：{_esc(data["text"])}</div>')
+                continue
             if kind == "entry":
                 e = data
                 etype = e.get("type", "")
@@ -544,6 +530,9 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
 
                 if etype != "心愿" and text:
                     h.append(f'<div class="entry-text">{_esc(text)}</div>')
+                if e.get("message"):
+                    h.append('<div class="entry-text" style="opacity:.6">'
+                             '写了什么，只有收信人知道。</div>')
                 h.append("</div>")
 
                 # polaroid photo for 风景 entries
@@ -574,12 +563,6 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
                                       row.get("license", ""))
                             if credit not in photo_credits:
                                 photo_credits.append(credit)
-            elif kind == "note":
-                n = data
-                nt = n.get("text", "") if isinstance(n, dict) else str(n)
-                h.append(f'<div class="margin-note">'
-                         f'我说：「{_esc(nt)}」</div>')
-
         h.append("</section>")
 
     # ======== Wishes page ========
@@ -618,8 +601,6 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
 
     # ======== Color page (显影) ========
     h.append('<section class="color-page">')
-    if grade:
-        h.append(f'<p class="grade-text">{_esc(grade)}</p>')
     h.append('<p class="color-intro">这趟旅行洗出来，是一种颜色</p>')
     h.append(f'<div class="color-swatch-large" '
              f'style="background-color:{color_hex};"></div>')
@@ -644,6 +625,7 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
                          f' · {_esc(dye_name)}</span>')
                 h.append("</div>")
         h.append("</div>")
+    h.append(f'<p class="grade-text" style="margin-top:1.8em">一期一会。</p>')
     h.append("</section>")
 
     # ======== Photo credits ========
@@ -659,22 +641,13 @@ def make_share_html(state, pack, closing_message: str = "") -> str:
             h.append(f'<p>{" · ".join(parts)}</p>')
         h.append("</section>")
 
-    # ======== Closing message ========
-    note_text = (closing_message or "").strip()
-    if note_text:
-        h.append('<section class="closing-message-section">')
-        h.append('<hr class="note-divider">')
-        h.append('<p class="note-label">给你的话：</p>')
-        h.append(f'<p class="note-text">{_esc(note_text)}</p>')
-        h.append("</section>")
-
     h.append("</article>")
     return "\n".join(h)
 
 
-def save_share_html(state, pack, closing_message: str = "") -> Path:
+def save_share_html(state, pack) -> Path:
     """Generate the travel journal HTML and save to saves/ directory."""
-    html_content = make_share_html(state, pack, closing_message=closing_message)
+    html_content = make_share_html(state, pack)
     path = SAVE_DIR / f"{state.trip_id}_手帐.html"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(html_content, encoding="utf-8")

@@ -56,7 +56,9 @@ class TripState:
     spent_local: int = 0        # 当地货币的精确总花销（报告用）
     log: list = field(default_factory=list)           # 最近输出流（观战页用）
     player_notes: list = field(default_factory=list)   # 玩家自语独立存储
+    footprints: dict = field(default_factory=dict)     # {day_str: [loc_name, ...]} 去过哪里
     timeline_seq: int = 0                               # 自语/日记共享递增序号
+    share_messages: list = field(default_factory=list)    # [{day, seq, text}] 给观者的实时留言
     ended: bool = False
     score: dict = field(default_factory=dict)
     created_at: str = ""
@@ -78,6 +80,9 @@ class TripState:
         for k, v in d.items():
             if hasattr(st, k):
                 setattr(st, k, v)
+        old = d.get("share_message", "")
+        if old and not st.share_messages:
+            st.share_messages = [{"day": st.day, "seq": 0, "text": old}]
         return st
 
     def save_path(self) -> Path:
