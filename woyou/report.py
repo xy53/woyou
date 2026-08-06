@@ -466,7 +466,15 @@ def _facts_digest(state, pack, f) -> str:
 
     if f["revisits"] or f["blocked"] or f["recognitions"]:
         L.append("")
-        L.append("路上的重访与被拦——")
+        has_revisit = bool(f["revisits"]) or any(
+            "又站到了" in r or "逛成了" in r for r in f["recognitions"])
+        has_block = bool(f["blocked"])
+        if has_revisit and has_block:
+            L.append("路上的重访与被拦——")
+        elif has_block:
+            L.append("路上被拦的那些次——")
+        else:
+            L.append("路上的重访——")
         for day, name in f["revisits"]:
             L.append(f"  第{day}天 又去了一次 {name}")
         for line in f["recognitions"]:
@@ -855,6 +863,11 @@ def _develop_block(state, pack):
             parts.append(f"{label}的{dye_short}")
         if parts:
             lines.append("——" + "、".join(parts) + "，把它染成了这样")
+    keys = _dim_keys(result)
+    dye_rows = _dye_rows(mod, keys, result) if mod is not None else []
+    if dye_rows:
+        lines.append("")
+        lines.extend(dye_rows)
     return "\n".join(lines), color, mod, result
 
 
@@ -896,13 +909,8 @@ def _credit_rows(credits: list) -> list:
     return rows
 
 
-def _appendix(digest: str, mod, keys: list, result: dict,
-              credits: list = None) -> str:
+def _appendix(digest: str, credits: list = None) -> str:
     lines = [RULE_APPENDIX, "", "【观察出处对照】（观察段能说的，全在这里）", digest]
-    rows = _dye_rows(mod, keys, result) if mod is not None else []
-    lines.append("")
-    lines.append("【染料记录】")
-    lines.extend(rows or ["- （这一程还没染上任何一味）"])
     credit_rows = _credit_rows(credits or [])
     if credit_rows:
         lines.append("")
@@ -935,7 +943,7 @@ def make_report(state, pack, observe: bool = False, photos: str = "text",
         blocks.append(wishes)
     blocks.append(develop)
     blocks.append(_endnote(state, out_dir))
-    blocks.append(_appendix(digest, mod, _dim_keys(result), result, credits))
+    blocks.append(_appendix(digest, credits))
 
     text = "\n\n".join(b for b in blocks if b).rstrip() + "\n"
     return {"text": text,

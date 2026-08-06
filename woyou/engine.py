@@ -633,10 +633,12 @@ class Trip:
         self._spend_t(t_cost)
         self._spend_energy(e_cost)
         if not deeper:
-            # 世界记忆③：逛尽之地不给空状态，给完成感
             if not st.flags.get(f"mastered:{st.slug}:{st.loc}"):
                 st.flags[f"mastered:{st.slug}:{st.loc}"] = True
                 self.emit(loc.get("mastered") or MASTERED_LINES[0])
+                self._journal("纪念", f"{loc['name']}被你逛成了熟地",
+                              loc.get("mastered") or MASTERED_LINES[0],
+                              loc["name"])
             else:
                 rng = stable_rng(st.seed, "mastered", st.day, st.t)
                 self.emit(rng.choice(MASTERED_LINES[1:]))
@@ -1190,10 +1192,7 @@ class Trip:
         if early:
             self.emit("你决定就到这里。有些旅行不必走满全程，想回家的那一刻，"
                       "就是终点到了。")
-        outro = meta.get("outro") or (
-            f"回程的路上，{meta['city']}在身后一点点变小。你没有回头看太久——"
-            f"该带走的，都已经在日记里了。")
-        self.emit(outro)
+        self.emit(self._build_outro())
         sc = self._score()
         st.score = sc
         names = st.route_names or st.route
@@ -1206,6 +1205,40 @@ class Trip:
         lines.append("（export 可导出完整游记）")
         lines.append("（report 可洗出这趟旅行的报告与颜色）")
         self.emit("\n".join(lines))
+
+    def _build_outro(self) -> str:
+        st, meta = self.state, self.pack["meta"]
+        city = meta["city"]
+        parts = []
+        shell = meta.get("outro_shell") or (
+            f"回程的路上，{city}在身后一点点变小。")
+        parts.append(shell)
+        memories = []
+        if st.stories_heard:
+            title = st.stories_heard[-1]
+            memories.append(f"一个听来的故事")
+        has_gifts = bool(st.bought)
+        if has_gifts:
+            memories.append("背包里多出来的东西")
+        box = st.box()
+        mastered = [k for k in st.flags if k.startswith(f"mastered:{st.slug}:")]
+        if mastered:
+            lid = mastered[0].split(":")[2]
+            loc = self.pack["_loc"].get(lid, {})
+            memories.append(f"逛到熟透的{loc.get('name', '那条街')}")
+        if st.journal:
+            photos = [e for e in st.journal if e.get("type") == "风景"]
+            if photos:
+                memories.append("几张拍下的画面")
+        done_wishes = [w for w in st.wishes if w.get("done")]
+        if done_wishes:
+            memories.append("手帐上画了钩的心愿")
+        if memories:
+            parts.append("你想起" + "、".join(memories) + "。")
+        closing = meta.get("outro_closing") or (
+            f"你没有回头看太久——该带走的，都已经在日记里了。")
+        parts.append(closing)
+        return "".join(parts)
 
     def _score(self) -> dict:
         """回味值：只在终局出现一次，由这趟旅行的「成色」得出。
@@ -1353,12 +1386,17 @@ class Trip:
         trivia = self.pack.get("trivia", [])
         if not trivia:
             return
+        seen = st.flags.get("_seen_trivia") or []
         key = self._bigrams(f"{loc['name']}{loc.get('name_local', '')}{loc['brief']}")
         best, best_score = None, 0
         for tv in trivia:
+            if tv in seen:
+                continue
             score = len(key & self._bigrams(tv))
             if score > best_score:
                 best, best_score = tv, score
         if best is not None and best_score >= 2:
             st.flags[flag] = True
+            seen.append(best)
+            st.flags["_seen_trivia"] = seen
             self.emit(f"脑子里翻出一句来——{best}")

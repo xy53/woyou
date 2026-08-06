@@ -118,7 +118,6 @@ class TestOfflineReport(unittest.TestCase):
         self.assertIn("这趟旅行洗出来，是一种颜色", self.text)
         self.assertFalse(self.rep["meta"]["observed"])
         self.assertIn("观察出处对照", self.text)
-        self.assertIn("染料记录", self.text)
 
     def test_unfinished_trip_says_which_day(self):
         t = make_trip(trip_id="test-unfinished")
@@ -176,8 +175,8 @@ class TestNoNumbersInBody(unittest.TestCase):
         self.assertFalse([c for c in develop if c.isdigit()],
                          f"显影段出现了数字：{develop!r}")
         self.assertNotIn(str(result["score"]), develop)
-        for label in result["labels"]:      # 成色清单只在附录
-            self.assertIn(label, rep["text"].split(report.RULE_APPENDIX)[1])
+        for label in result["labels"]:      # 成色清单在显影段
+            self.assertIn(label, develop)
 
     def test_appendix_keeps_the_numbers(self):
         t = played()
