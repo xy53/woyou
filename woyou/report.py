@@ -400,12 +400,17 @@ def _opening(state, pack, f) -> str:
             lines.append(f"——「{echo}」")
     sp = f["spend"]
     sym = sp["symbol"]
-    lines.append(f"住宿 {fmt_money(sym, sp['hotel'])}，吃 {fmt_money(sym, sp['food'])}")
-    tail = fmt_money(sym, sp["tickets"]) + " 的车票与门票"
+    parts = []
+    if sp["hotel"] > 0:
+        parts.append(f"住宿 {fmt_money(sym, sp['hotel'])}")
+    if sp["food"] > 0:
+        parts.append(f"吃 {fmt_money(sym, sp['food'])}")
+    if sp["tickets"] > 0:
+        parts.append(f"车票与门票 {fmt_money(sym, sp['tickets'])}")
     if sp["gifts"]:
-        lines.append(f"剩下的，变成了{'、'.join(sp['gifts'])}和 {tail}")
-    else:
-        lines.append(f"剩下的，变成了 {tail}")
+        parts.append("、".join(sp["gifts"]))
+    if parts:
+        lines.append(f"这趟花了 {fmt_money(sym, sp['total'])}——" + "，".join(parts))
     return "\n".join(lines)
 
 
@@ -446,14 +451,6 @@ def _facts_digest(state, pack, f) -> str:
         L.append("")
         L.append("听到的故事：" + "／".join(
             f"「{t}」（{w or '本地人'}）" for w, t, _ in f["stories"]))
-
-    L.append("")
-    if f["notes"]:
-        L.append(f"玩家自语（共 {len(f['notes'])} 条）：")
-        for i, n in enumerate(f["notes"], 1):
-            L.append(f"  {i}. {n['text']}")
-    else:
-        L.append("玩家自语：无")
 
     L.append("")
     if state.wishes:
@@ -534,10 +531,10 @@ def _timeline(state, pack, f, with_notes: bool) -> str:
         for slot, row in rows:
             out_rows.append(row)
             for n in [x for x in pending if x["slot"] == slot]:
-                out_rows.append(f"      🗨「{n['text']}」")
+                out_rows.append(f"      你说：「{n['text']}」")
                 pending.remove(n)
         for n in pending:      # 那个时段没记下任何日记，自语自己成行
-            out_rows.append(f"{n['slot']}  🗨「{n['text']}」")
+            out_rows.append(f"{n['slot']}  你说：「{n['text']}」")
         if not out_rows:
             out_rows.append("      （这一天只是走路和看天）")
         lines.extend(out_rows)
@@ -724,9 +721,7 @@ def _photos_block(state, pack, photos: str):
     lines = [RULE_PHOTOS, f"（你选了：{FORM_LABEL[photos]}）"]
     meta_rows, credits = [], []
     if not chosen:
-        lines.append("")
-        lines.append("这一程你一张也没拍。眼睛比相机记得久，也说不定。")
-        return "\n".join(lines), meta_rows, credits
+        return "", meta_rows, credits
     manifests = {}
     n_chosen = len(chosen)
     for i, item in enumerate(chosen, 1):
@@ -759,25 +754,14 @@ def _wishes_block(state, pack) -> str:
     if not state.wishes:
         return ""
     done = [w for w in state.wishes if w["done"]]
-    undone = [w for w in state.wishes if not w["done"]]
+    if not done:
+        return ""
     lines = [RULE_WISHES]
-    if not undone:
+    if len(done) == len(state.wishes):
         lines.append(f"你抄了 {len(state.wishes)} 条心愿")
         lines.append("每一条都应了验")
-        return "\n".join(lines)
-    lines.append(f"你抄了 {len(state.wishes)} 条心愿，{len(done)} 条应了验")
-    quoted = "".join(f"「{w['text']}」" for w in undone)
-    if len(undone) == 1:
-        lines.append(f"没应验的那条是{quoted}")
     else:
-        lines.append(f"没应验的是{quoted}")
-    cities = []
-    for w in undone:
-        name = _city_name_of_slug(state, pack, w.get("city", ""))
-        if name and name not in cities:
-            cities.append(name)
-    where = "、".join(cities) or pack["meta"]["city"]
-    lines.append(("它" if len(undone) == 1 else "它们") + f"现在是你回{where}的理由")
+        lines.append(f"你抄了 {len(state.wishes)} 条心愿，{len(done)} 条应了验")
     return "\n".join(lines)
 
 

@@ -46,6 +46,7 @@ VERB_ALIASES = {
     "note": ["note", "memo", "记", "批注", "自语", "心声"],
     "end": ["end", "回程", "结束", "回家"],
     "export": ["export", "导出"],
+    "share": ["share", "手帐", "分享"],
 }
 VERB_OF = {}
 for verb, keys in VERB_ALIASES.items():
@@ -171,7 +172,7 @@ class Trip:
             return self._flush(raw)
 
         if st.ended and verb not in {"status", "journal", "wishes", "map",
-                                     "export", "help", "note"}:
+                                     "export", "help", "note", "share"}:
             self.emit("旅程已经结束了。可以 journal 翻翻日记、export 导出游记，"
                       "或者开一段新的旅程。")
             return self._flush(raw)
@@ -452,6 +453,15 @@ class Trip:
     def _cmd_export(self, arg):
         path = journal.export_markdown(self.state, self.pack)
         self.emit(f"游记已写好：{path}")
+
+    def _cmd_share(self, arg):
+        st = self.state
+        if not st.ended:
+            self.emit("旅程还没结束呢。等旅行结束之后，再来做手帐吧。")
+            return
+        from . import share
+        path = share.save_share_html(st, self.pack, ai_note=arg)
+        self.emit(f"手帐已经做好了：{path}")
 
     def _cmd_note(self, arg):
         """旅人自语：纯可选的旁注。零耗时、零数值、不计分，只留痕。"""
@@ -1201,6 +1211,7 @@ class Trip:
         else:
             lines.append("这趟走得很轻，颜色还留在下一次")
         lines.append("（export 可导出完整游记）")
+        lines.append("（share 可做一份手帐分享页）")
         lines.append("（report 可洗出这趟旅行的报告与颜色）")
         self.emit("\n".join(lines))
 

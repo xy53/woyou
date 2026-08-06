@@ -88,10 +88,8 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
             lines.append("")
         margin = notes_by_day.get(d, [])
         if margin:
-            lines.append("路上的自语——")
-            lines.append("")
             for n in margin:
-                lines.append(f"> 🗨 {n}")
+                lines.append(f"> 你说：{n}")
             lines.append("")
 
     if state.wishes:
