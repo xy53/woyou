@@ -342,7 +342,7 @@ class Trip:
             "  photo [描述]  把眼前拍进日记              chat        和旅游搭子说说话\n"
             "  map / status / journal / wishes\n"
             "  wish <编号或关键词>  从心愿清单挑几条抄进手帐（可选，随时可添）\n"
-            "  note <随想>   完全可选的自语，零消耗零影响，只在手帐边留痕\n"
+            "  note <随想>   完全可选的自语，零消耗零影响，只留在私人游记\n"
             "  end trip      提前结束旅程回家\n"
             "中文也行：去金阁寺、吃汤豆腐、听（闭眼听一会儿）。\n"
             "每天 10 刻，用完必须 sleep。没有任务，没有必做之事——心愿单只是心愿。\n"
@@ -493,7 +493,7 @@ class Trip:
         """旅人自语：纯可选的旁注。零耗时、零数值、不计分，只留痕。"""
         if not arg:
             self.emit("想留一句什么就写在后面（note <随想>）。写不写都行，"
-                      "不影响任何数值，只会留在手帐边上和游记的旁注里。")
+                      "不影响任何数值，只留在私人游记里。")
             return
         self._player_note = arg
         st = self.state
@@ -509,7 +509,7 @@ class Trip:
             "loc": loc_obj.get("name", st.loc),
             "text": arg,
         })
-        self.emit("✎ 你在手帐边上记了一笔。")
+        self.emit("✎ 记下了，只有你自己的游记里看得到。")
 
     # ---------- 移动 ----------
     def _cmd_go(self, arg):

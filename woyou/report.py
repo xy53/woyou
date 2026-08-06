@@ -277,19 +277,10 @@ def _notes(state) -> list:
     """玩家自语（按发生顺序，逐字）。优先读独立存储，旧存档回落到 log。"""
     pn = getattr(state, "player_notes", None) or []
     if pn:
-        end_seq = None
-        if state.ended and state.journal:
-            end_seq = max(e.get("seq", 0) for e in state.journal)
         out = []
         for n in pn:
             if not isinstance(n, dict):
                 continue
-            if state.ended:
-                n_seq = n.get("seq", 0)
-                if end_seq is not None and n_seq > 0 and n_seq > end_seq:
-                    continue
-                if n_seq == 0 and n.get("day", 0) > min(state.day, state.days_total):
-                    continue
             out.append({"day": n.get("day"), "slot": n.get("slot", slot_of(n.get("t", 0))),
                         "text": n.get("text", "")})
         return out

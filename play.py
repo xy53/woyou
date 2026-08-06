@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 from woyou import content, llm  # noqa: E402
-from woyou.engine import Trip  # noqa: E402
+from woyou.engine import Trip, VERB_OF, ZH_PREFIX  # noqa: E402
 from woyou.state import active_trip_id, list_trips, load_state  # noqa: E402
 from woyou.util import fuzzy_pick, slot_of, SAVE_DIR  # noqa: E402
 
@@ -138,8 +138,20 @@ _PHOTO_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"
                 ".webp": "image/webp", ".gif": "image/gif"}
 
 
-_NOTE_CMDS = re.compile(r"^(note|postcard|share)\b", re.I)
 _POSTCARD_MSG = re.compile(r"背面你只写了一句：「[^」]*」")
+
+
+def _resolve_verb(cmd_raw: str):
+    """Resolve a raw command string to its canonical verb using the engine's alias tables."""
+    parts = cmd_raw.split(None, 1)
+    if not parts:
+        return None
+    head = parts[0].casefold()
+    if head in VERB_OF:
+        return VERB_OF[head]
+    if cmd_raw and cmd_raw[0] in ZH_PREFIX and len(cmd_raw) > 1:
+        return ZH_PREFIX[cmd_raw[0]]
+    return None
 
 
 def _observer_data() -> dict:
@@ -178,28 +190,37 @@ def _observer_data() -> dict:
         if locs:
             map_data.append({"district": dist["name"], "locs": locs})
 
-    share_iter = iter(getattr(st, "share_messages", None) or [])
-    next_share = next(share_iter, None)
+    # Count share commands visible in the log window to match from tail
+    visible_log = st.log[-40:]
+    share_count_in_log = sum(
+        1 for e in visible_log
+        if _resolve_verb(e.get("cmd", "")) == "share" and e.get("cmd", "").split(None, 1)[1:])
+    all_shares = getattr(st, "share_messages", None) or []
+    # Take the TAIL of share_messages matching the visible share count
+    tail_shares = all_shares[-share_count_in_log:] if share_count_in_log else []
+    share_iter = iter(tail_shares)
 
     log = []
-    for e in st.log[-40:]:
+    for e in visible_log:
         text = e.get("out", "")
         lines = [ln for ln in text.split("\n") if not ln.startswith("STATE {")]
         cmd_raw = e.get("cmd", "")
-        if _NOTE_CMDS.match(cmd_raw):
-            cmd_display = cmd_raw.split()[0]
+        verb = _resolve_verb(cmd_raw)
+        if verb in ("note", "postcard", "share"):
+            cmd_display = verb
         else:
             cmd_display = cmd_raw
         cleaned = "\n".join(lines).strip()
-        if cmd_display == "postcard":
+        if verb == "postcard":
             cleaned = _POSTCARD_MSG.sub("写了什么，只有收信人知道。", cleaned)
         entry = {
             "day": e.get("day"), "slot": slot_of(e.get("t", 0)),
             "cmd": cmd_display, "text": cleaned,
         }
-        if cmd_display == "share" and next_share is not None:
-            entry["share_text"] = next_share["text"]
-            next_share = next(share_iter, None)
+        if verb == "share" and cmd_raw.split(None, 1)[1:]:
+            ns = next(share_iter, None)
+            if ns is not None:
+                entry["share_text"] = ns["text"]
         log.append(entry)
 
     if st.ended and log:

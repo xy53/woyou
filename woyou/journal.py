@@ -77,16 +77,7 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
     items = []
     for e in state.journal:
         items.append({"kind": "entry", "seq": e.get("seq", 0), "day": e["day"], "data": e})
-    end_seq = None
-    if state.ended and state.journal:
-        end_seq = max(e.get("seq", 0) for e in state.journal)
     for n in raw_notes:
-        if state.ended:
-            n_seq = n.get("seq", 0)
-            if end_seq is not None and n_seq > 0 and n_seq > end_seq:
-                continue
-            if n_seq == 0 and n.get("day", 0) > min(state.day, state.days_total):
-                continue
         items.append({"kind": "note", "seq": n.get("seq", 0), "day": n["day"], "data": n})
 
     for sm in (getattr(state, "share_messages", None) or []):
