@@ -437,8 +437,9 @@ def make_share_html(state, pack) -> str:
             if loc not in foot[e["day"]]:
                 foot[e["day"]].append(loc)
 
-    # ---- all days with any content ----
-    all_days = sorted(jbd.keys())
+    # ---- all days with any content (journal OR share) ----
+    share_days = {sm["day"] for sm in (state.share_messages or [])}
+    all_days = sorted(set(jbd.keys()) | share_days)
 
     # ---- assemble HTML ----
     h = []
@@ -535,8 +536,8 @@ def make_share_html(state, pack) -> str:
                              '写了什么，只有收信人知道。</div>')
                 h.append("</div>")
 
-                # polaroid photo for 风景 entries
-                if etype == "风景" and photo_manifest:
+                # polaroid photo only for actual photo command entries
+                if e.get("via") == "photo" and photo_manifest:
                     loc_name = (e.get("loc") or "").strip()
                     loc_id = loc_ids.get(loc_name, "")
                     row = photo_manifest.get(loc_id)

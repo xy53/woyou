@@ -644,6 +644,12 @@ class Trip:
         box = st.box()
         loc = self.pack["_loc"][st.loc]
         slot, weather = slot_of(st.t), self._weather()
+        if not content.loc_open(loc, min(st.t, 9)):
+            self.emit(f"{loc['name']}这会儿关着门（{content.hours_text(loc)}）。"
+                      f"你站在外面听了一会儿——风声，偶尔一两声鸟叫，远处的车。"
+                      f"里面的声音隔着门听不见。")
+            self.record(kind="listen", loc=st.loc, slot=slot, weather=weather)
+            return
         sounds = loc.get("sounds")
         if not sounds:
             self.emit("你闭上眼听了一会儿。风声、人声、远处说不清的市声——"

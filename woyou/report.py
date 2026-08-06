@@ -929,7 +929,7 @@ def build_finale_data(state, pack) -> dict:
     places = f["places"]
 
     # Photos taken
-    photos = [e for e in state.journal if e.get("type") == "风景"]
+    photos = [e for e in state.journal if e.get("via") == "photo"]
 
     # Stories
     stories = f["stories"]
