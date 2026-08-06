@@ -266,6 +266,18 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(t.state.ended)
         self.assertIn("回味值", out)
 
+    def test_early_end_day_count(self):
+        t = make_trip(days=5)
+        t.cmd("sleep")
+        t.cmd("sleep")                         # 现在是第3天
+        out = t.cmd("end trip")
+        self.assertIn("共 3 天", out)
+
+    def test_day1_early_end_shows_1_day(self):
+        t = make_trip(days=3)
+        out = t.cmd("end trip")                # 第1天就走
+        self.assertIn("共 1 天", out)
+
     def test_note_is_free_and_logged(self):
         t = make_trip()
         out = t.cmd("note 这条街的光线像老照片")
@@ -465,12 +477,12 @@ class TestWorldMemory(unittest.TestCase):
         loc = t.pack["_loc"]["sanjo"]
         for _ in range(len(loc["explore"]) - 1):
             t.cmd("explore")
-        out_last = t.cmd("explore")            # 逛尽的那一刻
-        self.assertIn("逛成了熟地", out_last)
-        out = t.cmd("explore")                 # 再逛：首次给专属完成感
-        self.assertIn(loc["mastered"], out)
+        out_last = t.cmd("explore")            # 最后一层：立刻成为熟地
+        self.assertIn(loc["mastered"], out_last)
         self.assertTrue(t.state.flags.get("mastered:kyoto:sanjo"))
-        out2 = t.cmd("explore")                # 之后换通用句
+        self.assertEqual(t.state.journal[-1]["type"], "纪念")
+        self.assertIn("熟地", t.state.journal[-1]["title"])
+        out2 = t.cmd("explore")                # 再逛：通用回访句
         self.assertNotIn(loc["mastered"], out2)
         self.assertTrue(any(m in out2 for m in MASTERED_LINES[1:]))
         line = next(l for l in t.cmd("map").splitlines() if "三条寺町" in l)
@@ -479,9 +491,10 @@ class TestWorldMemory(unittest.TestCase):
     def test_mastered_generic_when_loc_has_no_text(self):
         t = make_trip(seed="7")
         t.cmd("go 鸭川")                       # 鸭川没写 mastered
-        for _ in range(len(t.pack["_loc"]["kamogawa"]["explore"])):
+        layers = t.pack["_loc"]["kamogawa"]["explore"]
+        for _ in range(len(layers) - 1):
             t.cmd("explore")
-        out = t.cmd("explore")
+        out = t.cmd("explore")                 # 最后一层即触发
         self.assertIn(MASTERED_LINES[0], out)
 
 

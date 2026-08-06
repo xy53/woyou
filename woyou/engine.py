@@ -633,15 +633,8 @@ class Trip:
         self._spend_t(t_cost)
         self._spend_energy(e_cost)
         if not deeper:
-            if not st.flags.get(f"mastered:{st.slug}:{st.loc}"):
-                st.flags[f"mastered:{st.slug}:{st.loc}"] = True
-                self.emit(loc.get("mastered") or MASTERED_LINES[0])
-                self._journal("纪念", f"{loc['name']}被你逛成了熟地",
-                              loc.get("mastered") or MASTERED_LINES[0],
-                              loc["name"])
-            else:
-                rng = stable_rng(st.seed, "mastered", st.day, st.t)
-                self.emit(rng.choice(MASTERED_LINES[1:]))
+            rng = stable_rng(st.seed, "mastered", st.day, st.t)
+            self.emit(rng.choice(MASTERED_LINES[1:]))
             self.record(kind="explore", loc=st.loc, level=level)
             return
 
@@ -657,7 +650,11 @@ class Trip:
             self._journal("意外", title, layer["text"], loc["name"])
             self.mark("gem")
         if vis["explored"] >= len(layers):
-            self.note(f"（{loc['name']}被你逛成了熟地）")
+            st.flags[f"mastered:{st.slug}:{st.loc}"] = True
+            mastered_text = loc.get("mastered") or MASTERED_LINES[0]
+            self.emit(mastered_text)
+            self._journal("纪念", f"{loc['name']}被你逛成了熟地",
+                          mastered_text, loc["name"])
         self.record(kind="explore", loc=st.loc, level=level + 1)
 
     def _reveal_loc(self, lid: str):
@@ -1196,7 +1193,8 @@ class Trip:
         sc = self._score()
         st.score = sc
         names = st.route_names or st.route
-        lines = [f"—— 旅程结算 ——", f"足迹：{ ' → '.join(names) }，共 {st.day - 1} 天"]
+        days_lived = min(st.day, st.days_total)
+        lines = [f"—— 旅程结算 ——", f"足迹：{ ' → '.join(names) }，共 {days_lived} 天"]
         lines.append(f"回味值 {sc['total']} —— {sc['grade']}")
         if sc["labels"]:
             lines.append("它由这些成色组成——" + "、".join(sc["labels"]))
