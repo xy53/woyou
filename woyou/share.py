@@ -5,8 +5,8 @@
 不是报告，不是考卷，是一段走过的路的私人记录。
 
 公开 API：
-    make_share_html(state, pack, ai_note="") -> str
-    save_share_html(state, pack, ai_note="") -> Path
+    make_share_html(state, pack, closing_message="") -> str
+    save_share_html(state, pack, closing_message="") -> Path
 """
 import html as _html
 from pathlib import Path
@@ -201,6 +201,7 @@ body{
   border-top:1px solid var(--border);text-align:center;
 }
 .grade-text{font-size:.95em;color:var(--text-sec);margin-bottom:1.8em}
+.color-intro{font-size:.85em;color:var(--text-sec);margin-bottom:1.2em}
 .color-swatch-large{
   width:140px;height:140px;border-radius:10px;
   margin:0 auto .8em;box-shadow:var(--shadow);
@@ -221,8 +222,8 @@ body{
   margin-right:.7em;flex-shrink:0;
 }
 
-/* ---- AI note ---- */
-.ai-note-section{margin-top:2.5em}
+/* ---- closing message ---- */
+.closing-message-section{margin-top:2.5em}
 .note-divider{border:none;border-top:1px solid var(--border);margin-bottom:1.2em}
 .note-label{font-size:.78em;color:var(--text-muted);margin-bottom:.4em}
 .note-text{
@@ -255,7 +256,7 @@ body{
 
 # ---------------------------------------------------------------- HTML builder
 
-def make_share_html(state, pack, ai_note: str = "") -> str:
+def make_share_html(state, pack, closing_message: str = "") -> str:
     """Generate a self-contained HTML travel journal page.
 
     Reads state (TripState) and pack (city content dict), computes the
@@ -305,20 +306,25 @@ def make_share_html(state, pack, ai_note: str = "") -> str:
     for e in state.journal:
         jbd.setdefault(e["day"], []).append(e)
 
-    # ---- extract player notes from log ----
-    notes_pool = []
-    for e in state.log:
-        n = (e.get("note") or "").strip()
-        if n:
-            notes_pool.append({
-                "day": e.get("day", 0),
-                "slot": slot_of(e.get("t", 0)),
-                "text": n,
-            })
+    # ---- extract player notes ----
+    raw_notes = getattr(state, "player_notes", None) or []
+    if not raw_notes:
+        # backward compat: old saves without player_notes
+        for e in state.log:
+            n = (e.get("note") or "").strip()
+            if n:
+                raw_notes.append({
+                    "seq": 0,
+                    "day": e.get("day", 0),
+                    "slot": slot_of(e.get("t", 0)),
+                    "text": n,
+                })
 
+    notes_pool = raw_notes
     nbd = {}
     for n in notes_pool:
-        nbd.setdefault((n["day"], n["slot"]), []).append(n["text"])
+        slot = n.get("slot") or slot_of(n.get("t", 0))
+        nbd.setdefault((n["day"], slot), []).append(n["text"])
 
     # ---- footprints per day (from journal location names) ----
     foot = {}
@@ -361,8 +367,16 @@ def make_share_html(state, pack, ai_note: str = "") -> str:
 
     # ======== Daily pages ========
     for d in all_days:
-        entries = jbd.get(d, [])
-        used_notes = set()
+        entries_for_day = jbd.get(d, [])
+        notes_for_day = [n for n in notes_pool if n.get("day") == d]
+
+        # Build unified timeline sorted by seq
+        timeline = []
+        for e in entries_for_day:
+            timeline.append(("entry", e.get("seq", 0), e))
+        for n in notes_for_day:
+            timeline.append(("note", n.get("seq", 0), n))
+        timeline.sort(key=lambda x: x[1])
 
         h.append('<section class="day-page">')
         h.append('<div class="day-header">')
@@ -372,7 +386,7 @@ def make_share_html(state, pack, ai_note: str = "") -> str:
 
         if len(names) > 1:
             day_cities = []
-            for e in entries:
+            for e in entries_for_day:
                 c = (e.get("city") or "").strip()
                 if c and c not in day_cities:
                     day_cities.append(c)
@@ -389,45 +403,34 @@ def make_share_html(state, pack, ai_note: str = "") -> str:
                      f'{_esc(" → ".join(route))}</span>')
         h.append("</div>")
 
-        for e in entries:
-            etype = e.get("type", "")
-            ecls = TYPE_CSS.get(etype, "")
-            prefix = TYPE_PREFIX.get(etype, "")
-            title = e.get("title", "")
-            text = e.get("text", "")
+        for kind, seq, data in timeline:
+            if kind == "entry":
+                e = data
+                etype = e.get("type", "")
+                ecls = TYPE_CSS.get(etype, "")
+                prefix = TYPE_PREFIX.get(etype, "")
+                title = e.get("title", "")
+                text = e.get("text", "")
 
-            h.append(f'<div class="entry entry-{ecls}">')
-            if etype == "心愿":
-                h.append(f'<div class="entry-label">'
-                         f'&#10003; {_esc(title)}</div>')
-            elif prefix:
-                h.append(f'<div class="entry-label">'
-                         f'{_esc(prefix)}{_esc(title)}</div>')
-            else:
-                h.append(f'<div class="entry-label">'
-                         f'{_esc(title)}</div>')
+                h.append(f'<div class="entry entry-{ecls}">')
+                if etype == "心愿":
+                    h.append(f'<div class="entry-label">'
+                             f'&#10003; {_esc(title)}</div>')
+                elif prefix:
+                    h.append(f'<div class="entry-label">'
+                             f'{_esc(prefix)}{_esc(title)}</div>')
+                else:
+                    h.append(f'<div class="entry-label">'
+                             f'{_esc(title)}</div>')
 
-            if etype != "心愿" and text:
-                h.append(f'<div class="entry-text">{_esc(text)}</div>')
-            h.append("</div>")
-
-            eslot = e.get("slot", "")
-            key = (d, eslot)
-            for idx, nt in enumerate(nbd.get(key, [])):
-                nk = (d, eslot, idx)
-                if nk not in used_notes:
-                    used_notes.add(nk)
-                    h.append(f'<div class="margin-note">'
-                             f'你说：「{_esc(nt)}」</div>')
-                    break
-
-        for sn in SLOTS:
-            key = (d, sn)
-            for idx, nt in enumerate(nbd.get(key, [])):
-                nk = (d, sn, idx)
-                if nk not in used_notes:
-                    h.append(f'<div class="margin-note">'
-                             f'你说：「{_esc(nt)}」</div>')
+                if etype != "心愿" and text:
+                    h.append(f'<div class="entry-text">{_esc(text)}</div>')
+                h.append("</div>")
+            elif kind == "note":
+                n = data
+                nt = n.get("text", "") if isinstance(n, dict) else str(n)
+                h.append(f'<div class="margin-note">'
+                         f'你说：「{_esc(nt)}」</div>')
 
         h.append("</section>")
 
@@ -469,6 +472,7 @@ def make_share_html(state, pack, ai_note: str = "") -> str:
     h.append('<section class="color-page">')
     if grade:
         h.append(f'<p class="grade-text">{_esc(grade)}</p>')
+    h.append('<p class="color-intro">这趟旅行洗出来，是一种颜色</p>')
     h.append(f'<div class="color-swatch-large" '
              f'style="background-color:{color_hex};"></div>')
     h.append(f'<div class="color-name-large">{_esc(color_name)}</div>')
@@ -494,10 +498,10 @@ def make_share_html(state, pack, ai_note: str = "") -> str:
         h.append("</div>")
     h.append("</section>")
 
-    # ======== AI's note ========
-    note_text = (ai_note or "").strip()
+    # ======== Closing message ========
+    note_text = (closing_message or "").strip()
     if note_text:
-        h.append('<section class="ai-note-section">')
+        h.append('<section class="closing-message-section">')
         h.append('<hr class="note-divider">')
         h.append('<p class="note-label">给你的话：</p>')
         h.append(f'<p class="note-text">{_esc(note_text)}</p>')
@@ -507,9 +511,9 @@ def make_share_html(state, pack, ai_note: str = "") -> str:
     return "\n".join(h)
 
 
-def save_share_html(state, pack, ai_note: str = "") -> Path:
+def save_share_html(state, pack, closing_message: str = "") -> Path:
     """Generate the travel journal HTML and save to saves/ directory."""
-    html_content = make_share_html(state, pack, ai_note=ai_note)
+    html_content = make_share_html(state, pack, closing_message=closing_message)
     path = SAVE_DIR / f"{state.trip_id}_手帐.html"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(html_content, encoding="utf-8")

@@ -2,27 +2,25 @@
 """卧游 · 旅行报告。
 
 把一段存档洗成一份「年度报告体」的纯文字报告，给 AI 玩家自己读：
-封面 / 开头段 / 观察 / 时间线 / 拍立得 / 心愿 / 显影 / 尾注 / 附录。
+封面 / 开头段 / 时间线 / 拍立得 / 心愿 / 显影 / 尾注 / 附录。
 
 定稿原则：
-- 除「观察」一段外，全文由存档数据确定性拼装——不联网、不猜测、不润色；
+- 全文由存档数据确定性拼装——不联网、不猜测、不润色；
 - 正文里不出现任何分数与成色清单：数字只留在文件末尾的附录；
-- 「观察」是唯一的 LLM 环节（DeepSeek，可选）。未开启或生成失败就整段省略，
-  玩家的自语回落到时间线——每句自语在整份报告里只出现一次；
+- 玩家的自语逐句落在时间线里——每句自语在整份报告里只出现一次；
 - 颜色（显影段）来自 woyou.score：这趟旅行达成了哪几味，就染成什么颜色；
 - 真实照片要过「时辰档案」的门（photos/manifest.json 里的时段／天气／季节）：
   一张照片只在它能诚实代表的条件下出场，对不上就静默回落文字拍立得。
   用了谁的照片，附录的「图片来源」就得逐张署名——CC 的义务不打折。
 
 公开 API：
-    make_report(state, pack, observe=False, photos="text") -> dict
-    save_report(state, pack, observe=False, photos="text") -> Path
+    make_report(state, pack, photos="text") -> dict
+    save_report(state, pack, photos="text") -> Path
 """
 import json
 import unicodedata
 from pathlib import Path
 
-from . import llm
 from .util import CONTENT_DIR, ROOT, SAVE_DIR, fmt_money, read_json, slot_of
 
 # ---------------------------------------------------------------- 版式常量
@@ -37,7 +35,6 @@ def _rule(title: str) -> str:
     return f"──── {title} ────"
 
 
-RULE_OBSERVE = _rule("观察")
 RULE_TIMELINE = _rule("时间线")
 RULE_PHOTOS = _rule("拍立得")
 RULE_WISHES = _rule("心愿")
@@ -76,25 +73,6 @@ BLOCKED_HINTS = [
     ("太晚了，本地人都归家", "太晚了，本地人都归家了"),
     ("邮筒不跑", "今天该歇了，明信片明天再寄"),
 ]
-
-OBSERVE_SYSTEM = """你在为一份旅行报告写「观察」一段。材料是一份旅行存档的事实清单。
-
-硬规则（逐条遵守）：
-1) 分行诗体：一行一个念头，行尾不加句号，节与节之间空一行，总共 4-7 节、不超过 28 行。
-2) 三禁：
-   禁心理断言——不写「懂了」「爱上了」「学会了」「你发现」「你感到」「你明白」
-   「你意识到」这类替人认定的内心变化，只写眼耳鼻舌身能接收到的；
-   禁替玩家下判断——不写「排对了」「值得了」「不虚此行」这类结论；
-   禁编造——事实清单里没有的地点、人、话、事，一个字也不许添。
-3) 玩家自语：清单里每一条自语都必须以「你说，」引出并逐字引用——不改字、不润色、
-   不省略任何一条，每条恰好出现一次。
-4) 没有自语就一个字也不提自语。
-5) 视角：你是一架不带感情的摄影机。只拍到的才写，拍不到的（内心活动、
-   价值判断、因果归纳）一律不写。「你走过」「你停下」可以，
-   「你领悟」「你被打动」不行。
-
-只输出这一段本身，不要标题，不要解释，不要 Markdown 标记。"""
-
 
 # ---------------------------------------------------------------- 小工具
 
@@ -425,10 +403,17 @@ def _facts_digest(state, pack, f) -> str:
     span = f"{f['days']} 天" if state.ended else f"行至第 {state.day} 天（未结束）"
     mate = f"与{f['mate_name']}同行" if f["mate_name"] else "独行"
     L.append(f"城市：{'、'.join(f['city_names'])}（{meta['country']}），{span}，{mate}")
-    L.append(f"花销：住宿 {fmt_money(sym, sp['hotel'])}（{sp['nights']} 晚）"
-             f"／吃 {fmt_money(sym, sp['food'])}"
-             f"／纪念品 {'、'.join(sp['gifts']) or '无'}"
-             f"／车票与门票 {fmt_money(sym, sp['tickets'])}")
+    spend_parts = []
+    if sp['hotel'] > 0:
+        spend_parts.append(f"住宿 {fmt_money(sym, sp['hotel'])}（{sp['nights']} 晚）")
+    if sp['food'] > 0:
+        spend_parts.append(f"吃 {fmt_money(sym, sp['food'])}")
+    if sp['gifts']:
+        spend_parts.append(f"纪念品 {'、'.join(sp['gifts'])}")
+    if sp['tickets'] > 0:
+        spend_parts.append(f"车票与门票 {fmt_money(sym, sp['tickets'])}")
+    if spend_parts:
+        L.append("花销：" + "／".join(spend_parts))
 
     by_day = {}
     for e in state.journal:
@@ -452,14 +437,17 @@ def _facts_digest(state, pack, f) -> str:
         L.append("听到的故事：" + "／".join(
             f"「{t}」（{w or '本地人'}）" for w, t, _ in f["stories"]))
 
-    L.append("")
+    if f["notes"]:
+        L.append("")
+        for n in f["notes"]:
+            L.append(f"  你说：{n['text']}")
+
     if state.wishes:
+        L.append("")
         done = [w for w in state.wishes if w["done"]]
         L.append(f"心愿：抄下 {len(state.wishes)} 条，应验 {len(done)} 条")
         for w in state.wishes:
             L.append(f"  {'✓' if w['done'] else '✗'} {w['text']}")
-    else:
-        L.append("心愿：一条也没抄")
 
     if f["revisits"] or f["blocked"] or f["recognitions"]:
         L.append("")
@@ -481,30 +469,15 @@ def _facts_digest(state, pack, f) -> str:
     return "\n".join(L)
 
 
-def _observe(digest: str) -> str:
-    """唯一的 LLM 环节。没 key、出错、空回复——都当作没有这一段。"""
-    try:
-        if not llm.has_key():
-            return ""
-        client = llm.DeepSeek()
-        text = client.chat(OBSERVE_SYSTEM, digest, temperature=0.5,
-                           max_tokens=1200)
-    except Exception:
-        return ""
-    text = (text or "").strip()
-    return text
-
-
 # ---------------------------------------------------------------- ④ 时间线
 
-def _timeline(state, pack, f, with_notes: bool) -> str:
+def _timeline(state, pack, f, with_notes: bool = True) -> str:
     by_day = {}
     for e in state.journal:
         by_day.setdefault(e["day"], []).append(e)
     notes_by_day = {}
-    if with_notes:
-        for n in f["notes"]:
-            notes_by_day.setdefault(n["day"], []).append(n)
+    for n in f["notes"]:
+        notes_by_day.setdefault(n["day"], []).append(n)
 
     days = sorted(set(by_day) | set(f["footprints"]) | set(notes_by_day))
     lines = [RULE_TIMELINE]
@@ -821,9 +794,6 @@ def _develop_block(state, pack):
         except Exception:
             color = {}
     lines = [RULE_DEVELOP]
-    grade = str(result.get("grade") or "").strip()
-    if grade:
-        lines.append(grade)
     lines.append("")
     lines.append("这趟旅行洗出来，是一种颜色")
     name = str(color.get("name") or "").strip()
@@ -894,33 +864,175 @@ def _credit_rows(credits: list) -> list:
 
 
 def _appendix(digest: str, credits: list = None) -> str:
-    lines = [RULE_APPENDIX, "", "【观察出处对照】（观察段能说的，全在这里）", digest]
+    lines = [RULE_APPENDIX]
     credit_rows = _credit_rows(credits or [])
     if credit_rows:
         lines.append("")
         lines.append("【图片来源】")
         lines.extend(credit_rows)
+    if len(lines) == 1:
+        return ""
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------- 结算（CLI 终局 / report 命令共用）
+
+def build_finale_data(state, pack) -> dict:
+    """Extract all finale facts from a trip state. Shared by CLI settlement, journal, and share page."""
+    f = _facts(state, pack)
+
+    # Score/develop
+    mod = _score_mod()
+    result, color = {}, {}
+    if mod is not None:
+        try:
+            result = mod.compute(state, pack) or {}
+        except Exception:
+            result = {}
+        try:
+            color = mod.blend(_dim_keys(result)) or {}
+        except Exception:
+            color = {}
+
+    # Places visited
+    places = f["places"]
+
+    # Photos taken
+    photos = [e for e in state.journal if e.get("type") == "风景"]
+
+    # Stories
+    stories = f["stories"]
+
+    # Wishes
+    wishes = state.wishes or []
+    done_wishes = [w for w in wishes if w.get("done")]
+
+    # Bought
+    bought = state.bought or []
+
+    # Days
+    days = _days_lived(state)
+
+    # City/companion
+    names = list(state.route_names or state.route)
+    mate_name = ""
+    if state.mate:
+        companions = _companions()
+        c = companions.get(state.mate)
+        if c:
+            mate_name = c.get("name", state.mate)
+
+    # Dye info
+    keys = _dim_keys(result)
+    dye_rows = _dye_rows(mod, keys, result) if mod is not None else []
+
+    # Dominant colors for the "把它染成了这样" line
+    all_doms = color.get("dominant") or []
+    dye_summary_parts = []
+    for d in all_doms:
+        if isinstance(d, (list, tuple)) and len(d) >= 2:
+            label, dye = d[0], d[1]
+        elif isinstance(d, dict):
+            label = d.get("label", "")
+            dye = d.get("dye", d.get("name", ""))
+        else:
+            continue
+        dye_short = dye[:-1] if dye.endswith("色") else dye
+        dye_summary_parts.append(f"{label}的{dye_short}")
+
+    return {
+        "city_names": names if names else [pack["meta"]["city"]],
+        "days": days,
+        "mate_name": mate_name,
+        "places": places,
+        "photos": photos,
+        "stories": stories,
+        "wishes": wishes,
+        "done_wishes": done_wishes,
+        "bought": bought,
+        "color_name": str(color.get("name") or "").strip(),
+        "color_line": str(color.get("line") or "").strip(),
+        "color_hex": str(color.get("hex") or "").strip(),
+        "dye_rows": dye_rows,
+        "dye_summary_parts": dye_summary_parts,
+        "grade_text": str(result.get("grade") or "").strip(),
+        "labels": result.get("labels") or [],
+        "score": result,
+    }
+
+
+def render_settlement_text(fd: dict) -> str:
+    """Render the CLI settlement text from finale data."""
+    lines = ["—— 旅程结算 ——", ""]
+
+    # City + days + companion
+    city_str = (" → ".join(fd["city_names"])
+                if len(fd["city_names"]) > 1
+                else fd["city_names"][0] if fd["city_names"] else "")
+    mate_str = f" · 与{fd['mate_name']}同行" if fd["mate_name"] else " · 独行"
+    lines.append(f"{city_str} · {fd['days']}天{mate_str}")
+
+    # Factual summary — zero items omitted entirely
+    if fd["places"]:
+        lines.append(f"走过 {len(fd['places'])} 处地方")
+    if fd["photos"]:
+        lines.append(f"留下 {len(fd['photos'])} 张照片")
+    if fd["stories"]:
+        lines.append(f"听了 {len(fd['stories'])} 个故事")
+    if fd["wishes"]:
+        done_count = len(fd["done_wishes"])
+        total = len(fd["wishes"])
+        if done_count > 0:
+            lines.append(f"{total} 条心愿中，{done_count} 条应验")
+        else:
+            lines.append(f"抄下 {total} 条心愿，还没来得及应验")
+    if fd["bought"]:
+        lines.append(f"带回 {len(fd['bought'])} 件纪念品")
+
+    # Develop section
+    if fd["color_name"]:
+        lines.append("")
+        lines.append("────── 显影 ──────")
+        if fd["grade_text"]:
+            lines.append("")
+            lines.append(fd["grade_text"])
+        lines.append("")
+        lines.append("这趟旅行洗出来，是一种颜色")
+        lines.append(fd["color_name"])
+        if fd["color_line"]:
+            lines.append(fd["color_line"])
+
+    if fd["dye_summary_parts"]:
+        lines.append("")
+        lines.append("——" + "、".join(fd["dye_summary_parts"]) + "，把它染成了这样")
+
+    if fd["dye_rows"]:
+        lines.append("")
+        for row in fd["dye_rows"]:
+            lines.append(row)
+
+    # Hints
+    lines.append("")
+    lines.append("（journal 翻日记 · export 导出游记 · share 做手帐分享页）")
+
     return "\n".join(lines)
 
 
 # ---------------------------------------------------------------- 公开 API
 
-def make_report(state, pack, observe: bool = False, photos: str = "text",
+def make_report(state, pack, photos: str = "text",
                 out_dir: Path = None) -> dict:
     """洗出一份旅行报告。返回 {"text": 全文, "meta": {...}}。"""
     if photos not in FORM_LABEL:
         photos = "text"
     f = _facts(state, pack)
     digest = _facts_digest(state, pack, f)
-    obs = _observe(digest) if observe else ""
 
     develop, color, mod, result = _develop_block(state, pack)
     photo_block, photo_meta, credits = _photos_block(state, pack, photos)
 
     blocks = [_cover(state, pack, f), _opening(state, pack, f)]
-    if obs:
-        blocks.append(RULE_OBSERVE + "\n\n" + obs)
-    blocks.append(_timeline(state, pack, f, with_notes=not obs))
+    blocks.append(_timeline(state, pack, f))
     blocks.append(photo_block)
     wishes = _wishes_block(state, pack)
     if wishes:
@@ -931,13 +1043,13 @@ def make_report(state, pack, observe: bool = False, photos: str = "text",
 
     text = "\n\n".join(b for b in blocks if b).rstrip() + "\n"
     return {"text": text,
-            "meta": {"color": color, "photos": photo_meta, "observed": bool(obs)}}
+            "meta": {"color": color, "photos": photo_meta}}
 
 
-def save_report(state, pack, observe: bool = False, photos: str = "text",
+def save_report(state, pack, photos: str = "text",
                 out_dir: Path = None) -> Path:
     """写 saves/<trip_id>_旅行报告.md 与同名 .meta.json，返回 md 路径。"""
-    rep = make_report(state, pack, observe=observe, photos=photos,
+    rep = make_report(state, pack, photos=photos,
                       out_dir=out_dir)
     md = report_path(state, out_dir)
     md.parent.mkdir(parents=True, exist_ok=True)

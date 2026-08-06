@@ -172,7 +172,7 @@ class Trip:
             return self._flush(raw)
 
         if st.ended and verb not in {"status", "journal", "wishes", "map",
-                                     "export", "help", "note", "share"}:
+                                     "export", "help", "share"}:
             self.emit("旅程已经结束了。可以 journal 翻翻日记、export 导出游记，"
                       "或者开一段新的旅程。")
             return self._flush(raw)
@@ -306,8 +306,10 @@ class Trip:
 
     def _journal(self, etype, title, text, loc_name=""):
         meta = self.pack["meta"]
+        self.state.timeline_seq += 1
         journal.add_entry(self.state, etype, title, text,
-                          loc_name=loc_name, city=meta["city"])
+                          loc_name=loc_name, city=meta["city"],
+                          seq=self.state.timeline_seq)
         self.note(f"✎ 日记·{etype}「{title}」")
 
     # ---------- 只读命令 ----------
@@ -460,7 +462,7 @@ class Trip:
             self.emit("旅程还没结束呢。等旅行结束之后，再来做手帐吧。")
             return
         from . import share
-        path = share.save_share_html(st, self.pack, ai_note=arg)
+        path = share.save_share_html(st, self.pack, closing_message=arg)
         self.emit(f"手帐已经做好了：{path}")
 
     def _cmd_note(self, arg):
@@ -470,6 +472,19 @@ class Trip:
                       "不影响任何数值，只会留在手帐边上和游记的旁注里。")
             return
         self._player_note = arg
+        st = self.state
+        meta = self.pack["meta"]
+        st.timeline_seq += 1
+        loc_obj = self.pack["_loc"].get(st.loc, {})
+        st.player_notes.append({
+            "seq": st.timeline_seq,
+            "day": st.day,
+            "t": min(st.t, 9),
+            "slot": slot_of(st.t),
+            "city": meta["city"],
+            "loc": loc_obj.get("name", st.loc),
+            "text": arg,
+        })
         self.emit("✎ 你在手帐边上记了一笔。")
 
     # ---------- 移动 ----------
@@ -1160,7 +1175,7 @@ class Trip:
         self.record(kind="visit", loc=st.loc)
 
     def _resolve_city_pack(self, query: str):
-        """按名字找已生成的内容包；没有则尝试现场生成。"""
+        """按名字找已生成的内容包；没有就提示去哪儿制作。"""
         packs = content.list_packs()
         cands = []
         for p in packs:
@@ -1169,22 +1184,10 @@ class Trip:
         slug = fuzzy_pick(query, cands)
         if slug:
             return content.load_pack(slug)
-        from . import llm
-        if not llm.has_key():
-            known = "、".join(p["city"] for p in packs) or "（无）"
-            self.emit(f"「{query}」的内容包还没做，而且没配 DEEPSEEK_API_KEY，"
-                      f"没法现场调研。已备好的城市：{known}")
-            return None
-        self.emit(f"你翻开手机开始查去{query}的路线……（首次到访，正在为它做调研与"
-                  f"内容生成，通常一两分钟，请稍等）")
-        try:
-            from .generate import build_city
-            new_slug = build_city(query, quiet=False)
-            return content.load_pack(new_slug)
-        except Exception as e:
-            self.emit(f"调研没能完成：{e}\n可以稍后用 `python play.py build --city "
-                      f"{query}` 重试，或先去已备好的城市。")
-            return None
+        self.emit("还没有这座城市的旅行内容。\n"
+                  "运行 `uv run play.py packs` 查看已有城市。\n"
+                  f"制作新城市可在旅程外运行：uv run play.py build --city {query}")
+        return None
 
     # ---------- 提前回程 / 终局 ----------
     def _cmd_end(self, arg):
@@ -1194,7 +1197,7 @@ class Trip:
         self._finale(early=True)
 
     def _finale(self, early: bool):
-        st, meta = self.state, self.pack["meta"]
+        st = self.state
         st.ended = True
         if early:
             self.emit("你决定就到这里。有些旅行不必走满全程，想回家的那一刻，"
@@ -1202,51 +1205,21 @@ class Trip:
         self.emit(self._build_outro())
         sc = self._score()
         st.score = sc
-        names = st.route_names or st.route
-        days_lived = min(st.day, st.days_total)
-        lines = [f"—— 旅程结算 ——", f"足迹：{ ' → '.join(names) }，共 {days_lived} 天"]
-        lines.append(f"回味值 {sc['total']} —— {sc['grade']}")
-        if sc["labels"]:
-            lines.append("它由这些成色组成——" + "、".join(sc["labels"]))
-        else:
-            lines.append("这趟走得很轻，颜色还留在下一次")
-        lines.append("（export 可导出完整游记）")
-        lines.append("（share 可做一份手帐分享页）")
-        lines.append("（report 可洗出这趟旅行的报告与颜色）")
-        self.emit("\n".join(lines))
+        from . import report as report_mod
+        fd = report_mod.build_finale_data(st, self.pack)
+        self.emit(report_mod.render_settlement_text(fd))
 
     def _build_outro(self) -> str:
-        st, meta = self.state, self.pack["meta"]
-        city = meta["city"]
+        meta = self.pack["meta"]
         parts = []
-        shell = meta.get("outro_shell") or (
-            f"回程的路上，{city}在身后一点点变小。")
-        parts.append(shell)
-        memories = []
-        if st.stories_heard:
-            title = st.stories_heard[-1]
-            memories.append(f"一个听来的故事")
-        has_gifts = bool(st.bought)
-        if has_gifts:
-            memories.append("背包里多出来的东西")
-        box = st.box()
-        mastered = [k for k in st.flags if k.startswith(f"mastered:{st.slug}:")]
-        if mastered:
-            lid = mastered[0].split(":")[2]
-            loc = self.pack["_loc"].get(lid, {})
-            memories.append(f"逛到熟透的{loc.get('name', '那条街')}")
-        if st.journal:
-            photos = [e for e in st.journal if e.get("type") == "风景"]
-            if photos:
-                memories.append("几张拍下的画面")
-        done_wishes = [w for w in st.wishes if w.get("done")]
-        if done_wishes:
-            memories.append("手帐上画了钩的心愿")
-        if memories:
-            parts.append("你想起" + "、".join(memories) + "。")
-        closing = meta.get("outro_closing") or (
-            f"你没有回头看太久——该带走的，都已经在日记里了。")
-        parts.append(closing)
+        shell = meta.get("outro_shell")
+        if shell:
+            parts.append(shell)
+        closing = meta.get("outro_closing")
+        if closing:
+            parts.append(closing)
+        if not parts:
+            parts.append("旅程到这里结束。")
         return "".join(parts)
 
     def _score(self) -> dict:

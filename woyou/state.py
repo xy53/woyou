@@ -55,6 +55,8 @@ class TripState:
     spent: int = 0              # 折合人民币的总花销（粗略，报告用）
     spent_local: int = 0        # 当地货币的精确总花销（报告用）
     log: list = field(default_factory=list)           # 最近输出流（观战页用）
+    player_notes: list = field(default_factory=list)   # 玩家自语独立存储
+    timeline_seq: int = 0                               # 自语/日记共享递增序号
     ended: bool = False
     score: dict = field(default_factory=dict)
     created_at: str = ""

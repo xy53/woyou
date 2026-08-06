@@ -9,8 +9,10 @@ TYPE_MARK = {"风景": "🏞", "风味": "🍜", "人物": "👤", "故事": "�
 
 
 def add_entry(state, etype: str, title: str, text: str,
-              loc_name: str = "", city: str = "") -> dict:
+              loc_name: str = "", city: str = "",
+              seq: int = 0) -> dict:
     entry = {
+        "seq": seq,
         "day": state.day,
         "slot": slot_of(state.t),
         "city": city,
@@ -35,11 +37,15 @@ def journal_brief(state, last: int = 12) -> str:
         mark = TYPE_MARK.get(e["type"], "·")
         lines.append(f"{mark} 第{e['day']}天·{e['slot']}｜{e['title']}")
     last_note = None
-    for e in reversed(state.log):
-        note = (e.get("note") or "").strip()
-        if note:
-            last_note = note
-            break
+    pn = getattr(state, "player_notes", None) or []
+    if pn:
+        last_note = pn[-1].get("text", "").strip() if isinstance(pn[-1], dict) else str(pn[-1]).strip()
+    else:
+        for e in reversed(state.log):
+            note = (e.get("note") or "").strip()
+            if note:
+                last_note = note
+                break
     if last_note:
         lines.append(f"\n✎ 最近一条自语：{last_note}")
     return "\n".join(lines)
@@ -53,25 +59,37 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
     names = state.route_names or state.route
     where = " → ".join(names) if multi else f"{meta['country']} · {meta['city']}"
     lines.append(f"> {where}，{min(state.day, state.days_total)} 天。")
-    if state.ended and state.score:
-        s = state.score
-        lines.append(f"> 回味值 **{s.get('total', 0)}** —— {s.get('grade', '')}")
     lines.append("")
 
-    by_day = {}
-    for e in state.journal:
-        by_day.setdefault(e["day"], []).append(e)
-    notes_by_day = {}
-    for l in state.log:
-        if l.get("note"):
-            notes_by_day.setdefault(l["day"], []).append(l["note"])
+    raw_notes = getattr(state, "player_notes", None) or []
+    if not raw_notes:
+        # backward compat: old saves without player_notes
+        for l in state.log:
+            if l.get("note"):
+                raw_notes.append({"day": l.get("day", 0), "seq": 0, "text": l["note"]})
 
-    for d in sorted(set(by_day) | set(notes_by_day)):
+    # Build unified timeline items
+    items = []
+    for e in state.journal:
+        items.append({"kind": "entry", "seq": e.get("seq", 0), "day": e["day"], "data": e})
+    for n in raw_notes:
+        # Only include notes from during the trip (ignore post-trip notes in old saves)
+        if not state.ended or n.get("day", 0) <= min(state.day, state.days_total):
+            items.append({"kind": "note", "seq": n.get("seq", 0), "day": n["day"], "data": n})
+
+    items.sort(key=lambda x: (x["day"], x["seq"]))
+
+    # Group by day
+    from itertools import groupby
+    for d, day_items in groupby(items, key=lambda x: x["day"]):
         weather = state.weather_by_day.get(str(d), "")
+        day_items = list(day_items)
         cities = []
-        for e in by_day.get(d, []):
-            if e.get("city") and e["city"] not in cities:
-                cities.append(e["city"])
+        for item in day_items:
+            if item["kind"] == "entry":
+                c = item["data"].get("city", "")
+                if c and c not in cities:
+                    cities.append(c)
         head = f"## 第{d}天"
         if cities:
             head += " · " + "·".join(cities)
@@ -79,18 +97,24 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
             head += f" · {weather}"
         lines.append(head)
         lines.append("")
-        for e in by_day.get(d, []):
-            mark = TYPE_MARK.get(e["type"], "·")
-            where = f"（{e['loc']}）" if e.get("loc") else ""
-            lines.append(f"**{mark} {e['slot']} · {e['title']}**{where}")
-            lines.append("")
-            lines.append(e["text"])
-            lines.append("")
-        margin = notes_by_day.get(d, [])
-        if margin:
-            for n in margin:
-                lines.append(f"> 你说：{n}")
-            lines.append("")
+
+        for item in day_items:
+            if item["kind"] == "entry":
+                e = item["data"]
+                mark = TYPE_MARK.get(e["type"], "·")
+                where = f"（{e['loc']}）" if e.get("loc") else ""
+                lines.append(f"**{mark} {e['slot']} · {e['title']}**{where}")
+                lines.append("")
+                lines.append(e["text"])
+                lines.append("")
+            elif item["kind"] == "note":
+                n = item["data"]
+                text = n.get("text", "") if isinstance(n, dict) else str(n)
+                note_lines = text.split("\n")
+                lines.append(f"> 你说：{note_lines[0]}")
+                for extra in note_lines[1:]:
+                    lines.append(f"> {extra}")
+                lines.append("")
 
     if state.wishes:
         lines.append("## 心愿单")
@@ -114,6 +138,33 @@ def export_markdown(state, pack, out_path: Path = None) -> Path:
         for b in state.bought:
             lines.append(f"- {b['name']}（{b.get('city', '')}）")
         lines.append("")
+
+    # Finale page
+    if state.ended:
+        from . import report as report_mod
+        fd = report_mod.build_finale_data(state, pack)
+        lines.append("## 旅程末页")
+        lines.append("")
+
+        if fd["grade_text"]:
+            lines.append(f"*{fd['grade_text']}*")
+            lines.append("")
+
+        if fd["color_name"]:
+            lines.append("这趟旅行洗出来，是一种颜色")
+            lines.append(f"**{fd['color_name']}**")
+            if fd["color_line"]:
+                lines.append(f"> {fd['color_line']}")
+            lines.append("")
+
+        if fd["dye_summary_parts"]:
+            lines.append("——" + "、".join(fd["dye_summary_parts"]) + "，把它染成了这样")
+            lines.append("")
+
+        if fd["dye_rows"]:
+            for row in fd["dye_rows"]:
+                lines.append(row)
+            lines.append("")
 
     out_path = out_path or (ROOT / "saves" / f"{state.trip_id}_游记.md")
     out_path.parent.mkdir(parents=True, exist_ok=True)

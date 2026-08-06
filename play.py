@@ -7,7 +7,7 @@
   uv run play.py build --city 奈良  预先为某座城做调研与内容生成（需要 API）
   uv run play.py cmd <命令...>      对当前旅程执行一条命令（AI 玩家用这个）
   uv run play.py export             导出游记
-  uv run play.py report [--observe --photos text|real|both]  生成旅行报告
+  uv run play.py report [--photos text|real|both]  生成旅行报告
   uv run play.py watch [--port N]   打开浏览器观战页
   uv run play.py trips / packs      列出旅程存档 / 已生成的城市
 """
@@ -38,7 +38,7 @@ from woyou.util import fuzzy_pick, slot_of, SAVE_DIR  # noqa: E402
 MATES = {"aman": "阿满（吃货发小）", "yanqiu": "砚秋（历史控学长）",
          "xiaoqi": "小柒（摄影系妹妹）"}
 
-INSPIRATION = """✈ 一点灵感（想去哪座城都可以直接说，没做过的会现场调研）——
+INSPIRATION = """✈ 一点灵感（先玩已备好的城市；新城市要在旅程外用 build 制作）——
   东亚：京都✓ 奈良 东京 大阪 ｜ 中国：泉州 大理 苏州 喀什
   东南亚·南亚：清迈 曼谷 会安 瓦拉纳西 ｜ 中亚·西亚：撒马尔罕 伊斯坦布尔 伊斯法罕
   欧洲：威尼斯 佛罗伦萨 格拉纳达 波尔图 布拉格 爱丁堡 巴黎 布达佩斯
@@ -47,27 +47,16 @@ INSPIRATION = """✈ 一点灵感（想去哪座城都可以直接说，没做�
 
 
 def resolve_city(query: str, allow_build: bool = True, force: bool = False):
-    """城市名 → 内容包 slug；没有则尝试生成。失败返回 None。"""
+    """城市名 → 内容包 slug；没有已备好的包就提示去哪儿制作。"""
     packs = content.list_packs()
     cands = [(p["slug"], [p["slug"], p.get("city") or ""]) for p in packs]
     slug = fuzzy_pick(query, cands)
     if slug:
         return slug
-    if not allow_build:
-        return None
-    if not llm.has_key():
-        print(f"「{query}」还没有内容包，且未配置 DEEPSEEK_API_KEY，无法现场调研。")
-        print("→ 把 key 写进项目根目录 .env（参考 .env.example），或先玩已备好的城市：")
-        for p in packs:
-            print(f"   {p['slug']}（{p['city']}）")
-        return None
-    from woyou.generate import build_city
-    print(f"第一次去「{query}」——开始调研与内容生成（DeepSeek，约 1-3 分钟）…\n")
-    try:
-        return build_city(query, force=force)
-    except Exception as e:
-        print(f"生成失败：{e}")
-        return None
+    print("该城市的旅行内容尚未安装。")
+    print("运行 `uv run play.py packs` 查看已有城市。")
+    print(f"制作新城市可在旅程外运行：uv run play.py build --city {query}")
+    return None
 
 
 def start_trip(args) -> Trip | None:
@@ -145,42 +134,20 @@ _PHOTO_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"
                 ".webp": "image/webp", ".gif": "image/gif"}
 
 
-def _mask_key(key: str) -> str:
-    tail = key[-4:] if len(key) >= 4 else key
-    prefix = "sk-" if key.startswith("sk-") else ""
-    return f"{prefix}****{tail}"
-
-
-def _write_env_key(key: str) -> None:
-    """把 DEEPSEEK_API_KEY 写进项目根 .env：已有该行则替换，否则追加；其余行保留。"""
-    env_path = ROOT / ".env"
-    lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
-    out, replaced = [], False
-    for line in lines:
-        if line.strip().startswith("DEEPSEEK_API_KEY="):
-            out.append(f"DEEPSEEK_API_KEY={key}")
-            replaced = True
-        else:
-            out.append(line)
-    if not replaced:
-        out.append(f"DEEPSEEK_API_KEY={key}")
-    env_path.write_text("\n".join(out) + "\n", encoding="utf-8")
-
-
 def _observer_data() -> dict:
     tid = active_trip_id()
     if not tid:
-        return {"empty": True, "has_key": llm.has_key()}
+        return {"empty": True}
     try:
         st = load_state(tid)
     except Exception:
-        return {"empty": True, "has_key": llm.has_key()}
+        return {"empty": True}
     slug = st.slug
     if slug not in _pack_cache:
         try:
             _pack_cache[slug] = content.load_pack(slug)
         except Exception:
-            return {"empty": True, "has_key": llm.has_key()}
+            return {"empty": True}
     pack = _pack_cache[slug]
     meta = pack["meta"]
     box = st.cities.get(slug, {})
@@ -224,7 +191,7 @@ def _observer_data() -> dict:
             except Exception:
                 route_names.append(s)
 
-    return {
+    d = {
         "trip_id": st.trip_id, "city": meta["city"], "country": meta["country"],
         "loc": cur_loc.get("name", ""), "day": st.day, "days_total": st.days_total,
         "slot": slot_of(st.t), "weather": st.weather_by_day.get(str(st.day), ""),
@@ -236,8 +203,28 @@ def _observer_data() -> dict:
                                           for w in st.wishes],
         "gems": st.gems, "stories": len(st.stories_heard),
         "map": map_data, "log": log,
-        "has_key": llm.has_key(),
     }
+
+    if st.ended:
+        from woyou.report import build_finale_data
+        fd = build_finale_data(st, pack)
+        d["finale"] = {
+            "grade_text": fd["grade_text"],
+            "color_name": fd["color_name"],
+            "color_line": fd["color_line"],
+            "color_hex": fd["color_hex"],
+            "dye_summary": fd["dye_summary_parts"],
+            "dye_rows": fd["dye_rows"],
+            "places": len(fd["places"]),
+            "photos": len(fd["photos"]),
+            "stories": len(fd["stories"]),
+            "wishes_total": len(fd["wishes"]),
+            "wishes_done": len(fd["done_wishes"]),
+            "bought": len(fd["bought"]),
+            "days": fd["days"],
+        }
+
+    return d
 
 
 class ObserverHandler(BaseHTTPRequestHandler):
@@ -267,12 +254,7 @@ class ObserverHandler(BaseHTTPRequestHandler):
         except Exception:
             body = None
         path = urlsplit(self.path).path
-        if path == "/config":
-            if body is None:
-                self._send_json(400, {"ok": False, "error": "请求体不是合法 JSON"})
-            else:
-                self._handle_config(body)
-        elif path == "/report":
+        if path == "/report":
             self._handle_report(body or {})
         else:
             self.send_response(404)
@@ -287,19 +269,6 @@ class ObserverHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _handle_config(self, body: dict) -> None:
-        key = str(body.get("key", "")).strip()
-        if not key:
-            self._send_json(400, {"ok": False, "error": "key 不能为空"})
-            return
-        try:
-            _write_env_key(key)
-        except Exception as e:
-            self._send_json(500, {"ok": False, "error": f"写入 .env 失败：{e}"})
-            return
-        os.environ["DEEPSEEK_API_KEY"] = key
-        self._send_json(200, {"ok": True, "masked": _mask_key(key)})
-
     def _handle_report(self, body: dict) -> None:
         tid = active_trip_id()
         if not tid:
@@ -311,29 +280,18 @@ class ObserverHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"ok": False, "error": f"读取存档失败：{e}"})
             return
         try:
-            from woyou.report import save_report
+            from woyou.report import build_finale_data, render_settlement_text
         except ImportError:
             self._send_json(200, {"ok": False,
                                    "error": "旅行报告模块（woyou/report.py）还没就位，暂时无法生成报告。"})
             return
-        observe = bool(body.get("observe")) and llm.has_key()
-        photos = body.get("photos")
-        if photos not in ("text", "real", "both"):
-            photos = "text"
         try:
-            path = save_report(trip.state, trip.pack, observe=observe, photos=photos)
-            text = path.read_text(encoding="utf-8")
-            meta = {}
-            meta_path = path.with_suffix(".meta.json")
-            if meta_path.exists():
-                try:
-                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-                except Exception:
-                    meta = {}
+            fd = build_finale_data(trip.state, trip.pack)
+            text = render_settlement_text(fd)
         except Exception as e:
-            self._send_json(200, {"ok": False, "error": f"报告生成失败：{e}"})
+            self._send_json(200, {"ok": False, "error": f"结算生成失败：{e}"})
             return
-        self._send_json(200, {"ok": True, "path": str(path), "text": text, "meta": meta})
+        self._send_json(200, {"ok": True, "text": text})
 
     def _serve_photo(self, path: str) -> None:
         """GET /photos/<slug>/<file> → content/<slug>/photos/<file>（只读，防路径穿越）。"""
@@ -414,7 +372,6 @@ def main():
     p_exp = sub.add_parser("export", help="导出游记")
 
     p_report = sub.add_parser("report", help="生成旅行报告")
-    p_report.add_argument("--observe", action="store_true", help="附加 DeepSeek 观察句（需要 API key）")
     p_report.add_argument("--photos", choices=["text", "real", "both"], default="text",
                           help="照片呈现方式（默认 text）")
     p_report.add_argument("--trip", help="存档 id（默认当前 active）")
@@ -477,22 +434,15 @@ def main():
             print(f"读取存档失败：{e}")
             return
         try:
-            from woyou.report import save_report
+            from woyou.report import build_finale_data, render_settlement_text
         except ImportError:
             print("旅行报告模块（woyou/report.py）还没就位，暂时无法生成报告。")
             return
-        observe = args.observe
-        if observe and not llm.has_key():
-            print("（未配置 DEEPSEEK_API_KEY，本次报告不含 DeepSeek 观察句——"
-                  "可把 key 写进项目根目录 .env，或在观战页底部配置。）\n")
-            observe = False
         try:
-            path = save_report(trip.state, trip.pack, observe=observe, photos=args.photos)
+            fd = build_finale_data(trip.state, trip.pack)
+            print(render_settlement_text(fd))
         except Exception as e:
-            print(f"报告生成失败：{e}")
-            return
-        print(path.read_text(encoding="utf-8"))
-        print(f"\n（已保存 → {path}）")
+            print(f"结算生成失败：{e}")
     elif args.sub == "watch":
         watch(args.port, open_browser=not args.no_open)
     elif args.sub == "trips":
