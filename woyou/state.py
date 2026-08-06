@@ -53,6 +53,7 @@ class TripState:
     wish_cap: int = 5                                 # 手帐心愿页容量（每多一城 +3）
     flags: dict = field(default_factory=dict)
     spent: int = 0              # 折合人民币的总花销（粗略，报告用）
+    spent_local: int = 0        # 当地货币的精确总花销（报告用）
     log: list = field(default_factory=list)           # 最近输出流（观战页用）
     ended: bool = False
     score: dict = field(default_factory=dict)

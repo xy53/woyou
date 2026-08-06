@@ -492,17 +492,17 @@ class TestAmbient(unittest.TestCase):
         t = make_trip(t=1)
         t.cmd("go 清水寺")
         out = t.cmd("look")
-        self.assertIn("行前功课", out)
+        self.assertIn("脑子里翻出一句来", out)
         self.assertIn("139根巨柱", out)        # 检索到的是清水寺那条，不是随机条目
         self.assertTrue(t.state.flags.get("trivia:kyoto:kiyomizu"))
         t.cmd("explore")                       # 换个时段再看
         out2 = t.cmd("look")
-        self.assertNotIn("行前功课", out2)     # 每地只浮现一次
+        self.assertNotIn("脑子里翻出一句来", out2)     # 每地只浮现一次
 
     def test_ambient_trivia_skipped_when_nothing_matches(self):
         t = make_trip()                        # 三条商店街与 trivia 无双字重叠
         out = t.cmd("look")
-        self.assertNotIn("行前功课", out)
+        self.assertNotIn("脑子里翻出一句来", out)
 
     def test_mate_ambient_once_per_loc_and_key(self):
         t = make_trip(seed="7", mate="aman")
@@ -682,9 +682,9 @@ class TestScore(unittest.TestCase):
         a, b = score.blend(keys), score.blend(keys)
         self.assertEqual(a, b)
         self.assertEqual(a, score.blend(list(reversed(keys))))
-        self.assertEqual(len(a["dominant"]), 4)
+        self.assertEqual(len(a["dominant"]), 3)
         for label, dye in a["dominant"]:
-            self.assertIn(label, score.LABEL_OF.values())
+            self.assertIn(label, score.SHORT_OF.values())
             self.assertTrue(dye)
 
     def test_blend_empty_is_plain_cloth(self):
@@ -697,7 +697,7 @@ class TestScore(unittest.TestCase):
     def test_blend_single_dim_keeps_its_own_dye(self):
         c = score.blend(["story"])
         self.assertEqual(c["hex"], "#2B2B2B")
-        self.assertEqual(c["dominant"], [("一个听来的故事", "墨色")])
+        self.assertEqual(c["dominant"], [("故事", "墨色")])
 
     def test_every_hex_is_well_formed(self):
         for key, label, dye, hexv in score.DIMS:
@@ -711,7 +711,7 @@ class TestScore(unittest.TestCase):
             c = score.blend(keys[:n])
             self.assert_hex(c["hex"])
             self.assertTrue(c["name"] and c["line"])
-            self.assertEqual(len(c["dominant"]), n)
+            self.assertEqual(len(c["dominant"]), min(n, 3))
 
 
 if __name__ == "__main__":

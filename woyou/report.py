@@ -198,11 +198,11 @@ def _footprints(state) -> dict:
             continue
         if head in SLEEP_WORDS:
             lst = order.setdefault(day, [])
-            if loc not in lst:
+            if not lst or lst[0] != loc:
                 lst.insert(0, loc)
             continue
         lst = order.setdefault(day, [])
-        if loc not in lst:
+        if not lst or lst[-1] != loc:
             lst.append(loc)
     for e in state.journal:
         loc = (e.get("loc") or "").strip()
@@ -316,7 +316,8 @@ def _spend(state, pack) -> dict:
         gifts.append(b.get("name", ""))
         gift_cost += _item_price(pack, b.get("id", ""))
     rate = float(meta.get("cny_rate", 1) or 1)
-    total = int(round(int(state.spent or 0) * rate))
+    spent_local = getattr(state, "spent_local", 0)
+    total = int(spent_local) if spent_local else int(round(int(state.spent or 0) * rate))
     tickets = max(0, total - hotel - food - gift_cost)
     return {"nights": nights, "hotel": hotel, "food": food,
             "gifts": [g for g in gifts if g], "gift_cost": gift_cost,
@@ -341,6 +342,10 @@ def _stories(state, pack) -> list:
 
 def _facts(state, pack) -> dict:
     footprints = _footprints(state)
+    if state.ended and state.day > state.days_total:
+        for d in list(footprints):
+            if d > state.days_total:
+                del footprints[d]
     places = set()
     for names in footprints.values():
         places.update(names)
@@ -444,7 +449,7 @@ def _facts_digest(state, pack, f) -> str:
 
     L.append("")
     if f["notes"]:
-        L.append(f"玩家自语（共 {len(f['notes'])} 条，必须逐字引用，一条都不许少）：")
+        L.append(f"玩家自语（共 {len(f['notes'])} 条）：")
         for i, n in enumerate(f["notes"], 1):
             L.append(f"  {i}. {n['text']}")
     else:
@@ -629,9 +634,13 @@ def _select_photos(pool: list, limit: int = PHOTO_LIMIT):
     return chosen, len(pool) - len(chosen)
 
 
-def _text_box(item: dict) -> str:
+def _text_box(item: dict, num: int = 0, total: int = 0) -> str:
     label = f"{item['loc'] or item['title']} · {item['slot']}".strip(" ·")
-    lines = ["╭" + "─" * BODY_COLS + "╮"]
+    if num and total > 1:
+        tag = f" {num}/{total} "
+        lines = ["╭─" + tag + "─" * (BODY_COLS - 1 - len(tag)) + "╮"]
+    else:
+        lines = ["╭" + "─" * BODY_COLS + "╮"]
     for ln in _wrap(item["text"]):
         lines.append("│ " + ln)
     tail = max(1, PAGE_W - 5 - _width(label))
@@ -711,7 +720,8 @@ def _photos_block(state, pack, photos: str):
         lines.append("这一程你一张也没拍。眼睛比相机记得久，也说不定。")
         return "\n".join(lines), meta_rows, credits
     manifests = {}
-    for item in chosen:
+    n_chosen = len(chosen)
+    for i, item in enumerate(chosen, 1):
         line, row = "", None
         if photos in ("real", "both"):
             slug = _slug_of_city(state, pack, item["city"])
@@ -725,7 +735,7 @@ def _photos_block(state, pack, photos: str):
             lines.append(line)
             credits.append(row)
         if form != "real":
-            lines.append(_text_box(item))
+            lines.append(_text_box(item, num=i, total=n_chosen))
         meta_rows.append({"day": item["day"], "slot": item["slot"],
                           "city": item["city"], "loc": item["loc"],
                           "title": item["title"], "form": form})
@@ -831,23 +841,20 @@ def _develop_block(state, pack):
     if line:
         lines.append(line)
     all_doms = color.get("dominant") or []
-    if len(all_doms) <= 4:
-        doms = []
+    if all_doms:
+        parts = []
         for d in all_doms:
             if isinstance(d, (list, tuple)) and len(d) >= 2:
-                doms.append(f"{d[0]}的{d[1]}")
+                label, dye = d[0], d[1]
             elif isinstance(d, dict):
-                doms.append(f"{d.get('label', '')}的{d.get('dye', d.get('name', ''))}")
-        if doms:
-            lines.append("——" + "、".join(doms) + "，把它染成了这样")
-    elif all_doms:
-        dye_names = []
-        for d in all_doms:
-            if isinstance(d, (list, tuple)) and len(d) >= 2:
-                dye_names.append(d[1])
-            elif isinstance(d, dict):
-                dye_names.append(d.get("dye", d.get("name", "")))
-        lines.append("——" + "、".join(dye_names) + "，把它染成了这样")
+                label = d.get("label", "")
+                dye = d.get("dye", d.get("name", ""))
+            else:
+                continue
+            dye_short = dye[:-1] if dye.endswith("色") else dye
+            parts.append(f"{label}的{dye_short}")
+        if parts:
+            lines.append("——" + "、".join(parts) + "，把它染成了这样")
     return "\n".join(lines), color, mod, result
 
 

@@ -54,7 +54,8 @@ for verb, keys in VERB_ALIASES.items():
 
 # 单字中文前缀命令：「去金阁寺」「吃汤豆腐」这种不带空格的写法
 ZH_PREFIX = {"去": "go", "吃": "eat", "尝": "eat", "买": "buy", "听": "listen",
-             "聊": "talk", "飞": "fly", "逛": "explore"}
+             "聊": "talk", "飞": "fly", "逛": "explore", "拍": "photo",
+             "歇": "rest", "记": "note"}
 
 SCENIC_TYPES = {"river", "park", "path", "viewpoint", "temple", "shrine"}
 TIME_VERBS = {"go", "explore", "talk", "eat", "buy", "rest", "sleep", "fly",
@@ -240,9 +241,13 @@ class Trip:
     def _state_line(self) -> str:
         st, meta = self.state, self.pack["meta"]
         loc = self.pack["_loc"].get(st.loc, {})
+        box = st.box()
+        vis = (box.get("visited") or {}).get(st.loc, {})
+        layers = loc.get("explore", [])
+        t_clamped = min(st.t, 9)
         d = {
-            "day": st.day, "days": st.days_total, "t": min(st.t, 9),
-            "slot": slot_of(st.t), "city": meta["city"],
+            "day": st.day, "days": st.days_total, "t": st.t,
+            "slot": slot_of(t_clamped), "city": meta["city"],
             "loc": loc.get("name", st.loc),
             "money": st.money, "cur": meta["currency_symbol"],
             "energy": st.energy,
@@ -252,6 +257,15 @@ class Trip:
             "gems": st.gems,
             "mate": self.mate["name"] if self.mate else None,
             "new": self.marks, "end": st.ended,
+            "locked": st.t >= 10,
+            "here": {
+                "type": loc.get("type", ""),
+                "open": content.loc_open(loc, t_clamped),
+                "has_food": bool(content.dishes_at(self.pack, st.loc)),
+                "has_shop": bool(loc.get("shop")),
+                "npc": len(content.npcs_at(self.pack, st.loc, t_clamped)),
+                "explore_left": max(0, len(layers) - vis.get("explored", 0)),
+            },
         }
         return STATE_PREFIX + json.dumps(d, ensure_ascii=False)
 
@@ -260,8 +274,6 @@ class Trip:
         parts = raw.split(None, 1)
         head = parts[0].casefold()
         arg = parts[1].strip() if len(parts) > 1 else ""
-        if head in ("end", "结束") and arg.casefold() == "trip":
-            return "end", ""
         if head in VERB_OF:
             return VERB_OF[head], arg
         if raw[0] in ZH_PREFIX and len(raw) > 1:
@@ -287,6 +299,7 @@ class Trip:
         st.money -= amount
         rate = meta.get("cny_rate", 1) or 1
         st.spent += round(amount / rate)
+        st.spent_local = getattr(st, "spent_local", 0) + amount
         self.note(f"💴 -{fmt_money(meta['currency_symbol'], amount)}（{why}）")
         return True
 
@@ -308,14 +321,17 @@ class Trip:
             "  fly <城市>    换一座城（花钱花时间）\n"
             "随时可做（免费）——\n"
             "  look          四下看看（时段天气不同景）  listen      闭上眼，听这个地方\n"
-            "  photo         把眼前拍进日记              chat        和旅游搭子说说话\n"
+            "  photo [描述]  把眼前拍进日记              chat        和旅游搭子说说话\n"
             "  map / status / journal / wishes\n"
-            "  wish <编号>   从心愿清单挑几条抄进手帐（可选，随时可添）\n"
+            "  wish <编号或关键词>  从心愿清单挑几条抄进手帐（可选，随时可添）\n"
             "  note <随想>   完全可选的自语，零消耗零影响，只在手帐边留痕\n"
             "  end trip      提前结束旅程回家\n"
             "中文也行：去金阁寺、吃汤豆腐、听（闭眼听一会儿）。\n"
             "每天 10 刻，用完必须 sleep。没有任务，没有必做之事——心愿单只是心愿。\n"
-            "凭输出和 STATE 行做决定，怎么旅行，全看你。")
+            "凭输出和 STATE 行做决定，怎么旅行，全看你。\n"
+            "（大致体力：走路 6-15、逛/聊/跟/吃 4-12、漫步 5、歇脚回 +22。跨区更费腿。）\n"
+            "（STATE 速查：t=当日第几刻(共10)、locked=该sleep了、"
+            "here=当前地点可做的事、gems=深巷发现累计。）")
 
     def _cmd_status(self, arg):
         st, meta = self.state, self.pack["meta"]
@@ -422,8 +438,14 @@ class Trip:
         if added:
             self.emit("你把笔帽咬开，一条条抄进手帐。字落在纸上，"
                       "旅行就有了几个小小的朝向——路怎么走，还是你的事。")
+            remaining = self._wish_menu()
+            if remaining and len(st.wishes) < st.wish_cap:
+                lines = [f"清单上还剩（wish <编号或关键词>）——"]
+                for i, w in enumerate(remaining):
+                    lines.append(f"  {i + 1}. {w['text']}")
+                self.emit("\n".join(lines))
         if misses:
-            self.emit(f"没对上号的：{'、'.join(misses)}（wishes 看编号）")
+            self.emit(f"没对上号的：{'、'.join(misses)}（wishes 看编号或关键词）")
         if not added and not misses:
             self.emit("一条也没抄。也好，轻装上阵。")
 
@@ -763,6 +785,10 @@ class Trip:
         story = npc.get("story")
         if story and story["title"] not in st.stories_heard:
             need = int(story.get("after_talks", 2))
+            if count == need - 1:
+                hint = npc.get("story_hint",
+                               f"{npc['name']}顿了顿，像是想起什么又咽了回去。")
+                self.emit(hint)
             if count >= need:
                 self.emit(story["text"])
                 st.stories_heard.append(story["title"])
@@ -895,8 +921,13 @@ class Trip:
             self.emit("摸了摸钱包，连明信片都要斟酌——那就明天再寄。")
             return
         self._spend_t(1)
-        flavor = meta.get("postcard_flavor",
-                         "你在街角的小店挑了一张明信片，贴上邮票。")
+        raw_flavor = meta.get("postcard_flavor",
+                              "你在街角的小店挑了一张明信片，贴上邮票。")
+        if isinstance(raw_flavor, list):
+            rng = stable_rng(st.seed, "postcard", st.day, st.t)
+            flavor = rng.choice(raw_flavor)
+        else:
+            flavor = raw_flavor
         if arg:
             body = f"背面你只写了一句：「{arg}」"
         else:
@@ -1008,7 +1039,8 @@ class Trip:
         vis["photos"].append(key)
         scene = content.pick_text(loc.get("photo") or loc.get("look", {}), slot, weather)
         self.emit(f"你举起相机。\n{scene}")
-        self._journal("风景", f"{loc['name']}·{slot}", scene, loc["name"])
+        caption = f"\n你在底下写：「{arg}」" if arg else ""
+        self._journal("风景", f"{loc['name']}·{slot}", scene + caption, loc["name"])
         self._mate_ambient("photo")
         # 带相机的旅伴（小柒），总有一张会落在你身上
         if (self.mate and self.mate.get("camera")
@@ -1147,6 +1179,9 @@ class Trip:
 
     # ---------- 提前回程 / 终局 ----------
     def _cmd_end(self, arg):
+        if arg.casefold() != "trip":
+            self.emit("确定要现在结束旅程回家吗？再输入 end trip 确认。")
+            return
         self._finale(early=True)
 
     def _finale(self, early: bool):
@@ -1326,4 +1361,4 @@ class Trip:
                 best, best_score = tv, score
         if best is not None and best_score >= 2:
             st.flags[flag] = True
-            self.emit(f"你忽然想起行前功课里记过的一句——{best}")
+            self.emit(f"脑子里翻出一句来——{best}")

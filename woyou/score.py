@@ -23,7 +23,7 @@ DIMS = [
     ("habit",     "一个回访的老位置", "黛蓝",   "#3A4B6B"),
     ("bought",    "一件带回家的东西", "胭脂",   "#9D2933"),
     ("photo",     "一张拍下的景",     "银鼠",   "#91989F"),
-    ("wish",      "应验过的心愿",     "柑子色", "#F6AD49"),
+    ("wish",      "抄下的心愿",       "柑子色", "#F6AD49"),
     ("weathered", "雨或夜里的景",     "青灰",   "#6B7D7D"),
     ("multicity", "第二座城",         "群青",   "#4C6CB3"),
 ]
@@ -31,6 +31,11 @@ DIMS = [
 LABEL_OF = {k: label for k, label, _, _ in DIMS}
 DYE_OF = {k: (dye, hexv) for k, _, dye, hexv in DIMS}
 DIM_ORDER = [k for k, _, _, _ in DIMS]
+SHORT_OF = {
+    "story": "故事", "gem": "发现", "dish": "味道", "join": "入乡",
+    "friend": "熟人", "habit": "回访", "bought": "礼物", "photo": "光影",
+    "wish": "心愿", "weathered": "雨夜", "multicity": "远行",
+}
 
 POINT_PER_DIM = 12          # 每种成色的定价：都一样，因为它们都只发生一次
 TRICKLE_CAP = 15            # 日记涓滴的封顶：量只能贡献这么多
@@ -94,7 +99,7 @@ def _has_photo(state, pack):
 
 
 def _has_wish(state, pack):
-    return any(w.get("done") for w in getattr(state, "wishes", []) or [])
+    return bool(getattr(state, "wishes", None))
 
 
 def _weathered_key(key: str) -> bool:
@@ -223,6 +228,7 @@ def blend(dim_keys) -> dict:
     mixed = tuple(round(sum(c[i] for c in rgbs) / len(rgbs)) for i in range(3))
     name, _, line = nearest_named(mixed)
     ranked = sorted(keys, key=lambda k: _dist2(mixed, hex_to_rgb(DYE_OF[k][1])))
-    dominant = [(LABEL_OF[k], DYE_OF[k][0]) for k in ranked]
+    top = ranked[:3]
+    dominant = [(SHORT_OF.get(k, LABEL_OF[k]), DYE_OF[k][0]) for k in top]
     return {"hex": rgb_to_hex(mixed), "name": name, "line": line,
             "dominant": dominant}

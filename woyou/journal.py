@@ -34,6 +34,14 @@ def journal_brief(state, last: int = 12) -> str:
     for e in entries:
         mark = TYPE_MARK.get(e["type"], "·")
         lines.append(f"{mark} 第{e['day']}天·{e['slot']}｜{e['title']}")
+    last_note = None
+    for e in reversed(state.log):
+        note = (e.get("note") or "").strip()
+        if note:
+            last_note = note
+            break
+    if last_note:
+        lines.append(f"\n✎ 最近一条自语：{last_note}")
     return "\n".join(lines)
 
 
