@@ -3,3 +3,8 @@ saves/
 __pycache__/
 *.pyc
 content/*/pack.debug.json
+tests/
+content/*/research.md
+content/*/photos/review.html
+content/*/photos/candidates.json
+CHATGPT_PLAY.md
