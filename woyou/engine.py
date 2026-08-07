@@ -577,7 +577,8 @@ class Trip:
             st.flags[seen_key] = True
             if dist.get("intro"):
                 self.emit(dist["intro"])
-        self.record(kind="visit", loc=lid)
+        self.record(kind="visit", loc=lid,
+                    slot=slot_of(min(st.t, 9)), weather=self._weather())
 
     # ---------- 观察 ----------
     CLOSED_LOOK = {
@@ -1229,7 +1230,8 @@ class Trip:
                 self.emit(f"手帐翻开新的一页，印着{dmeta['city']}的心愿清单"
                           f"（wishes 查看、wish <编号> 抄下；心愿页扩到 "
                           f"{st.wish_cap} 条）。")
-        self.record(kind="visit", loc=st.loc)
+        self.record(kind="visit", loc=st.loc,
+                    slot=slot_of(min(st.t, 9)), weather=self._weather())
 
     def _resolve_city_pack(self, query: str):
         """按名字找已生成的内容包；没有就提示去哪儿制作。"""
@@ -1370,6 +1372,10 @@ class Trip:
                     continue
                 return True
             if ctype == "visit" and r["kind"] == "visit" and r["loc"] == check.get("loc"):
+                if check.get("slot") and r["slot"] != check["slot"]:
+                    continue
+                if check.get("weather") and check["weather"] not in r["weather"]:
+                    continue
                 return True
             if ctype == "eat" and r["kind"] == "eat":
                 if check.get("dish") and r["dish"] != check["dish"]:

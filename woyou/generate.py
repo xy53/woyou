@@ -71,8 +71,7 @@ META_PROMPT_TAIL = """
   "train_cost_hint": 城际火车/巴士到邻近旅行城市的票价(整数),
   "flight_cost_hint": 飞往邻国主要城市的经济舱票价量级(整数),
   "postcard_price": 一张明信片加一枚邮票在当地的价格(整数,当地货币),
-  "postcard_flavor": "30-60字、以「你」开头的完整一句（句号结尾）：在这座城买明信片的小场景——
-                      在哪种店、挑的是什么图案的明信片、贴的是什么邮票。要具体到这座城的真实街道和本地特色。",
+  "postcard_flavor": ["变体1", "变体2", "变体3"],
   "default_budget": 建议的5天旅行预算(整数,含住宿吃饭门票市内交通,宽裕适中),
   "default_days": 5,
   "intro": "180-260字的抵达叙事：第二人称，从落地/下车写到进城放下行李，要有这座城独有的气味与声音",
@@ -83,6 +82,9 @@ META_PROMPT_TAIL = """
 }
 weather 是每月天气模式：月份为 key，值是 [天气名, 权重整数] 列表，天气名用中文
 （晴/多云/阴/小雨/雷阵雨/雪…按当地气候写实），12 个月都要有，权重反映概率。
+postcard_flavor 是数组（3-4条），每条 30-60 字，以「你」开头，描述在这座城里
+买明信片的一个小场景——在哪种店、挑的是什么风格/图案/材质的明信片、贴的什么邮票。
+每条要具体到这座城的真实街道和本地特色，4 条之间风格/店铺/材质各不相同。
 """
 
 
@@ -132,15 +134,15 @@ DETAIL_RULES = """
 为上面列出的每个地点写细节。只输出一个 JSON 对象：
 {"locations": [{
    "id": "对应的地点id",
-   "look": {"default":"...", 以及至少两个时段变体, 有雨情味的地方加 "rain"},
+   "look": {"default":"...", 以及至少两个时段变体, "rain":"雨天看到的样子"},
    "sounds": {"default":"...", 另加 1-3 个变体（morning/dusk/night/rain 等）},
    "explore": [
       {"text":"第一层：走进去，看见什么"},
       {"text":"第二层：更细的纹理、人的痕迹"},
-      {"text":"第三层(可选)：这个地方的底色，或一个容易被错过的细节",
+      {"text":"第三层：这个地方的底色，或一个容易被错过的细节",
        "gem":true 仅当这层是「本地人才懂的发现」, "title":"发现的名字(gem时)"}
    ],
-   "photo": {"default":"按下快门时取景框里的画面，60-100字"},
+   "photo": {"default":"...", 另加 1-2 个时段变体（morning/dusk/night 等）},
    "join": 可选，见下（本片区约一半地点才有）,
    "revisit": 可选，见下（本片区至多 1 处）,
    "mastered": 可选，见下（本片区至多 1 处）,
@@ -150,15 +152,22 @@ DETAIL_RULES = """
 }]}
 要求：
 - explore 每层 80-150 字，第二人称，层层深入，写真实细节（调研报告里提过的
-  容易错过之处优先用上）；
+  容易错过之处优先用上）；temple/shrine/landmark/mosque/church/palace/museum/ruins
+  类型的地点（名胜）必须写满 3 层 explore，最深一层标 gem；
+- look 的 default 必须至少含一个非视觉感官（气味/温度/触感/湿度）——
+  市场写食物气味，园林/小径写脚下触感和空气湿度，寺庙写香火或木头或石头温度，
+  水边写风或盐或飞溅。look 和 sounds 都要有 rain 变体；
+- photo 至少 2 个变体（default 加一个时段变体）；
+- 全部文案禁止「你忽然明白」「你意识到」「原来是」「你这才」等叙述者越位句式，
+  要以具体画面收尾，不要替玩家想；
 - sounds：每个地点都必须有。60-120 字，**只写听觉**——声音的层次与远近、
   质地与节奏、间歇里的安静、忽然近了的一声。严禁任何视觉描写：不写颜色、
   光线、看见了什么、谁长什么样。玩家是闭着眼睛在听，要让人光凭耳朵就认得出
   这是哪儿（不同时段/雨天的变体，声音会换一套，不是同一段话改几个字）；
   若地点有休业时段（hours 之外的时辰），对应时段的变体要写「从门外听到」的
   声音——门里的安静、卷帘的动静、街面替它发出的声响；
-- join（可选，本片区约一半地点写；只给市场／寺院／清真寺／教堂／河岸／老街／
-  咖啡店／浴场这类「有本地人的做法可以照着模仿」的地方写）：
+- join（temple/shrine/mosque/church/palace/landmark 类型的名胜必须写；其余类型的
+  市场／河岸／老街／咖啡店／浴场等「有本地人做法可以模仿」的地方也写）：
   {"text":"100-160字，第二人称：照着本地人的样子，把某件具体的小事做一次——
            排队的规矩、参拜的礼数、点单的暗语、跳石过河、洗手的次序、
            进门的一句招呼……动作要写清楚到读者能照做，允许笨拙，
@@ -202,7 +211,7 @@ NPC_RULES = """
 只输出一个 JSON 对象：
 {"npcs": [{
   "id":"ascii小写", "name":"称呼式名字（如：腌菜店的阿婆／河边的大学生乐手）",
-  "loc":"所在地点id", "slots":[起,止] 出现时段或 null,
+  "loc":"所在地点id", "slots":[起,止] 出现时段（0-9整数，0=清晨 2=上午 4=午后 6=黄昏 8=夜晚）或 null,
   "persona":"50字人设，给叙事引擎用",
   "meet":"80-130字初见场景：他/她正在做什么，怎么和旅行者搭上话",
   "recall":"40-80字：隔天再见时认出旅行者的那句话与那个动作。要让人一眼看出
@@ -218,8 +227,11 @@ NPC_RULES = """
            "reveal": 可选 {"loc":"隐藏点id"}}
 }]}
 要求：
-- 4-6 位，分布在不同地点（市场/老街/寺庙/咖啡店/河边优先），slots 要符合身份
+- 5-6 位，分布在不同地点（市场/老街/寺庙/咖啡店/河边优先），slots 要符合身份
   （夜市老板娘在夜里，早市摊主在清晨）；
+- NPC 话题要尽量覆盖更多地点：每个 NPC 的 2-3 个话题中，至少 1 个要自然提到
+  另一个地点（通过 reveal 引出隐藏点，或在话题文字里推荐玩家去某处）；
+  目标是 NPC 驻留地点 + 话题提及地点合计覆盖全城 70% 以上的地点；
 - recall 每位都要写，且要和这个人的行当对得上（卖腌菜的用手，卖书的用书）；
 - story 必须取材于调研报告「会遇到的人」与「掌故与传说」里的真实素材；
 - story.echo 必须逐字出现在 story.text 里（会被程序校验，对不上就丢弃），
@@ -253,7 +265,7 @@ EXTRAS_RULES = """
              "text":"60-100字：端上来的样子、吃法、来历","energy":18-30}],
  "events": [{"id":"ascii","chance":0.1到0.25,"once":true或false,
              "weather":"雨" 可选(天气名包含此字才触发),
-             "slots":[起,止] 可选,"district":"片区id" 可选,"loc":"地点id" 可选,
+             "slots":[起,止] 可选（0-9整数，同NPC），"district":"片区id" 可选,"loc":"地点id" 可选,
              "text":"60-130字：路上撞见的一幕",
              "journal":"意外" 可选(值得记进日记的才加),"title":"日记标题(有journal时)"}],
  "wander": [{"text":"60-120字：不带目的地闲逛时撞见的小景",
@@ -274,13 +286,13 @@ wishes 的 check 判定 DSL（type 必选其一，引用必须用真实存在的
  {"type":"explore","loc":"地点id","level":2}              {"type":"rest","loc_type":"cafe"}
 要求：
 - dishes 8-10 样，全部真实；events 6-9 个，其中 1-2 个雨天限定、1-2 个夜晚限定；
-- wander 10-14 条：玩家漫无目的地走时撞见的东西，写「无名的、非景点的、日常的」——
+- wander 至少 天数×3 条（5天城市至少15条）：玩家漫无目的地走时撞见的东西，写「无名的、非景点的、日常的」——
   小巷尽头的壁龛、窗台上晒的腌菜坛子、二楼晾出来的被子、门口给猫留的水碗、
   老人坐在台阶上扇扇子、墙角贴的手写告示、深夜还亮着灯的裁缝铺……
   要有生活的证据感：看得出有人在照料它、有人天天从它旁边过；
   意象要贴合这座城的文化和气候，不要套用其他城市的典型物件；
   不写已经在地点列表里的地方，不写成景点介绍，不给它名字也没关系；
-  半数挂 district（写出那个片区的性格），少数挂 slot 或 weather:"雨"；
+  每个 district 至少 4 条，其中至少 1 条 slot="夜晚"、至少 1 条 weather="雨"；
 - wishes 12-16 条：这是给玩家自己挑选的「心愿清单」菜单，玩家只会抄走其中几条，
   所以选项要足、质感要厚——每条都像旅人手帐里会写的话，带这座城独有的具体意象
   （「在雨里逛一次老街」而不是「完成look动作」；点出真实的河、真实的坂道、真实的味道）；
@@ -489,7 +501,8 @@ def sanitize_pack(pack: dict) -> list:
         else:
             meta.pop("postcard_flavor", None)
     elif isinstance(flavor, str) and flavor.strip():
-        meta["postcard_flavor"] = flavor.strip()
+        meta["postcard_flavor"] = [flavor.strip()]
+        log.append("postcard_flavor 从字符串转为单元素数组")
     else:
         meta.pop("postcard_flavor", None)
     try:
@@ -525,7 +538,9 @@ def sanitize_pack(pack: dict) -> list:
             n.pop("recall", None)        # 引擎有通用的「认人」兜底
         slots = n.get("slots")
         if isinstance(slots, list) and len(slots) == 2:
-            n["slots"] = [max(0, _int(slots[0])), min(9, _int(slots[1], 9))]
+            s0 = max(0, min(9, _int(slots[0])))
+            s1 = max(0, min(9, _int(slots[1], 9)))
+            n["slots"] = [s0, s1] if s0 <= s1 else [s1, s1]
         else:
             n["slots"] = None
         topics = []
@@ -600,7 +615,9 @@ def sanitize_pack(pack: dict) -> list:
             e.pop("district", None)
         slots = e.get("slots")
         if isinstance(slots, list) and len(slots) == 2:
-            e["slots"] = [max(0, _int(slots[0])), min(9, _int(slots[1], 9))]
+            s0 = max(0, min(9, _int(slots[0])))
+            s1 = max(0, min(9, _int(slots[1], 9)))
+            e["slots"] = [s0, s1] if s0 <= s1 else [s1, s1]
         elif slots is not None:
             e.pop("slots", None)
         rv = e.get("reveal")
