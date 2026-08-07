@@ -769,7 +769,8 @@ class Trip:
         else:
             self.emit(rng.choice(WANDER_GENERIC))
         self._mate_ambient("wander", loc["type"])
-        self.record(kind="wander", loc=st.loc)
+        self.record(kind="wander", loc=st.loc,
+                    slot=slot_of(min(st.t, 9)), weather=self._weather())
 
     def _cmd_join(self, arg):
         """入乡随俗：照着本地人的样子做一次这里的小事。"""
@@ -1420,6 +1421,8 @@ class Trip:
                     continue
                 return True
             if ctype == "wander" and r["kind"] == "wander":
+                if check.get("weather") and check["weather"] not in r.get("weather", ""):
+                    continue
                 return True
             if ctype == "postcard" and r["kind"] == "postcard":
                 return True

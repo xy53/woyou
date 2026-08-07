@@ -979,7 +979,7 @@
     {
       "id": "rain_walk",
       "text": "在雨里走一段京都的路",
-      "check": { "type": "look", "weather": "雨" }
+      "check": { "type": "wander", "weather": "雨" }
     },
     {
       "id": "kinkaku_shot",

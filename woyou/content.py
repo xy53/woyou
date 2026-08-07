@@ -216,7 +216,10 @@ def loc_open(loc: dict, t: int) -> bool:
     hours = loc.get("hours")
     if not hours:
         return True
-    return hours[0] <= t <= hours[1]
+    # 对齐到时段边界：显示"清晨—黄昏"就意味着整个黄昏都开
+    lower = (hours[0] // 2) * 2
+    upper = (hours[1] // 2) * 2 + 1
+    return lower <= t <= upper
 
 
 def hours_text(loc: dict) -> str:
