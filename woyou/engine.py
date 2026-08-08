@@ -278,7 +278,7 @@ class Trip:
                 "open": content.loc_open(loc, t_clamped),
                 "has_food": bool(content.loc_open(loc, t_clamped) and content.dishes_at(self.pack, st.loc)),
                 "has_shop": bool(content.loc_open(loc, t_clamped) and loc.get("shop")),
-                "npc": len(content.npcs_at(self.pack, st.loc, t_clamped)),
+                "npc": len(content.npcs_at(self.pack, st.loc, t_clamped, day=st.day, seed=st.seed)),
                 "explore_left": max(0, len(layers) - vis.get("explored", 0)),
             },
         }
@@ -805,7 +805,8 @@ class Trip:
     def _cmd_talk(self, arg):
         st = self.state
         box = st.box()
-        npcs = content.npcs_at(self.pack, st.loc, min(st.t, 9))
+        npcs = content.npcs_at(self.pack, st.loc, min(st.t, 9),
+                               day=st.day, seed=st.seed)
         if not npcs:
             rng = stable_rng(st.seed, "nonpc", st.day, st.t)
             self.emit(rng.choice(NO_NPC))
@@ -834,8 +835,10 @@ class Trip:
         if nid not in box["met"]:
             box["met"].append(nid)
             box.setdefault("talked_day", {})[nid] = st.day   # 初见也算「见过面」
-            self.emit(npc["meet"])
-            self._journal("人物", npc["name"], npc["meet"], self.pack["_loc"][st.loc]["name"])
+            at_home = npc.get("loc") == st.loc
+            meet_text = npc["meet"] if at_home else npc.get("meet_roam", npc["meet"])
+            self.emit(meet_text)
+            self._journal("人物", npc["name"], meet_text, self.pack["_loc"][st.loc]["name"])
         else:
             self._npc_recall(npc, box)
             topics = npc.get("topics", [])
@@ -881,18 +884,22 @@ class Trip:
             self.emit(f"{npc['name']}朝你点点头，像对一个街坊。")
             return
         st.flags[f"recall:{st.slug}:{nid}"] = True
-        greet = npc.get("recall") or (
-            f"「又是你。」{npc['name']}认出了你，神色松了半分——"
-            f"回头客和游客，在这条街上是两种待遇。")
+        at_home = npc.get("loc") == st.loc
+        default_recall = (f"「又是你。」{npc['name']}认出了你，神色松了半分——"
+                          f"回头客和游客，在这条街上是两种待遇。")
+        if at_home:
+            greet = npc.get("recall") or default_recall
+        else:
+            greet = npc.get("recall_roam") or npc.get("recall") or default_recall
         memory_line = ""
         for b in st.bought:
-            if b.get("loc") == st.loc:
+            if b.get("loc") == npc["loc"]:
                 memory_line = f"「上回带走的{b['name']}，还合心意吧？」"
                 break
         if not memory_line:
             for did in st.dishes_tried:
                 dish = self.pack["_dish"].get(did)
-                if dish and st.loc in dish.get("locs", []):
+                if dish and npc["loc"] in dish.get("locs", []):
                     memory_line = f"「上回那份{dish['name']}，吃得惯吧？」"
                     break
         self.emit((greet + memory_line).strip())
@@ -1162,9 +1169,29 @@ class Trip:
             "楼下飘来早饭的香气。", "旅舍老板娘和你道了早安。",
             "你在门口站了站，深吸一口这座城醒来的味道。", "街上的第一班车正驶过。",
         ])
-        self.emit(f"— 第 {st.day} 天 · {weather} —\n新的一天。{breakfast}"
+        pull = self._morning_npc_pull()
+        extra = f"\n{pull}" if pull else ""
+        self.emit(f"— 第 {st.day} 天 · {weather} —\n新的一天。{breakfast}{extra}"
                   f"（剩 {st.days_total - st.day + 1} 天，钱包 "
                   f"{fmt_money(meta['currency_symbol'], st.money)}）")
+
+    def _morning_npc_pull(self):
+        """早晨 NPC 牵引：已见过的 NPC 有概率在早晨被提及。"""
+        st = self.state
+        box = st.box()
+        talked = box.get("talked", {})
+        candidates = []
+        for nid, count in talked.items():
+            if count >= 1:
+                npc = self.pack["_npc"].get(nid)
+                if npc and npc.get("morning_pull"):
+                    candidates.append(npc)
+        if not candidates:
+            return None
+        rng = stable_rng(st.seed, "morning_pull", st.day)
+        if rng.random() > 0.33:
+            return None
+        return rng.choice(candidates)["morning_pull"]
 
     def _cmd_fly(self, arg):
         st, meta = self.state, self.pack["meta"]

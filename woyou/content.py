@@ -6,7 +6,7 @@
 """
 from pathlib import Path
 
-from .util import CONTENT_DIR, read_json, fuzzy_pick, slot_of
+from .util import CONTENT_DIR, read_json, fuzzy_pick, slot_of, stable_rng
 
 LOC_TYPES = {"temple", "shrine", "market", "street", "river", "park", "path",
              "viewpoint", "museum", "shop", "nightlife", "cafe", "landmark", "square",
@@ -135,6 +135,26 @@ def validate_pack(pack: dict) -> list:
             need(n, k, None, where)
         if n.get("loc") not in loc_ids:
             errs.append(f"{where} loc 未定义: {n.get('loc')}")
+        roam = n.get("roam")
+        if roam is not None:
+            if not isinstance(roam, list):
+                errs.append(f"{where}.roam 应为地点列表")
+            else:
+                for rid in roam:
+                    if rid not in loc_ids:
+                        errs.append(f"{where}.roam 引用未定义地点 {rid}")
+                    if rid == n.get("loc"):
+                        errs.append(f"{where}.roam 不应包含 home 地点 {rid}")
+            rc = n.get("roam_chance")
+            if rc is not None and (not isinstance(rc, (int, float)) or not 0 < rc <= 1):
+                errs.append(f"{where}.roam_chance 应为 (0,1] 之间的数值")
+        mp = n.get("morning_pull")
+        if mp is not None and not isinstance(mp, str):
+            errs.append(f"{where}.morning_pull 应为字符串")
+        for roam_field in ("meet_roam", "recall_roam"):
+            rv = n.get(roam_field)
+            if rv is not None and not isinstance(rv, str):
+                errs.append(f"{where}.{roam_field} 应为字符串")
         st = n.get("story")
         if st and ("text" not in st or "title" not in st):
             errs.append(f"{where}.story 需要 title/text")
@@ -249,11 +269,22 @@ def pick_text(block, slot: str, weather: str) -> str:
     return block.get("default", "")
 
 
-def npcs_at(pack: dict, loc_id: str, t: int) -> list:
-    """当前时刻在场的 NPC 列表。"""
+def npcs_at(pack: dict, loc_id: str, t: int, *,
+            day: int = 0, seed: str = "") -> list:
+    """当前时刻在场的 NPC 列表。支持 roam 游荡（additive）。"""
     out = []
     for n in pack.get("npcs", []):
-        if n.get("loc") != loc_id:
+        at_here = n.get("loc") == loc_id
+        if not at_here and day and seed:
+            roam = n.get("roam")
+            if roam and loc_id in roam:
+                roam_loc = pack.get("_loc", {}).get(loc_id)
+                if roam_loc and not loc_open(roam_loc, t):
+                    continue
+                rng = stable_rng(seed, "npc_roam", n["id"], day)
+                if rng.random() < n.get("roam_chance", 0.3):
+                    at_here = rng.choice(roam) == loc_id
+        if not at_here:
             continue
         slots = n.get("slots")
         if slots and not (slots[0] <= t <= slots[1]):
