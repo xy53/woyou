@@ -6,10 +6,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Exterior_of_Hagia_Sophia_(1)_-_Istanbul_(2022).jpg",
     "scene_note": "圣索菲亚大教堂外观，穹顶与宣礼塔清晰可见",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -20,10 +17,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Sultan_Ahmed_Mosque_2022_2.jpg",
     "scene_note": "蓝色清真寺外景，六座宣礼塔与层叠穹顶",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -34,10 +28,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Palacio_de_Topkap%C4%B1,_Estambul,_Turqu%C3%ADa,_2024-09-30,_DD_90-92_HDR.jpg",
     "scene_note": "托普卡帕宫全景，宫殿建筑群",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -81,10 +72,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:S%C3%BCleymaniye_Mosque_February_2013_01.jpg",
     "scene_note": "苏莱曼尼耶清真寺外观全景，宏伟穹顶与宣礼塔矗立于天际线",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -95,10 +83,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Galata_Tower_(1)_-_Istanbul_(2022).jpg",
     "scene_note": "加拉太塔近景，圆锥塔顶与石砌塔身",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -109,10 +94,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Istiklal_Avenue_in_Istanbul_-_Turkey.jpg",
     "scene_note": "独立大街街景，行人漫步于伊斯坦布尔最著名的步行商业街",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -123,10 +105,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Dolmabah%C3%A7e_Palace_and_Sultans_gate_april_19_2014.jpg",
     "scene_note": "多尔玛巴赫切宫苏丹之门外观，奥斯曼巴洛克风格的华丽宫门",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": "晴",
     "season_months": null
   },
@@ -137,10 +116,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Kad%C4%B1k%C3%B6y_market_stall,_Istanbul.jpg",
     "scene_note": "卡德柯伊市场摊位，展示当地集市的鲜活日常",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -151,10 +127,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Sultanahmet_ferry_on_the_Bosphorus_in_Istanbul,_Turkey_001.jpg",
     "scene_note": "博斯普鲁斯海峡上的渡轮，海面与城市天际线交相辉映",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -165,10 +138,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Gate_of_Istanbul_Archaeological_Museums.jpg",
     "scene_note": "伊斯坦布尔考古博物馆入口大门，新古典主义建筑外观",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -179,9 +149,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:A_view_of_the_Ey%C3%BCpsultan_coastline_from_Pierre_Loti_Hill.jpg",
     "scene_note": "从皮埃尔·洛蒂山俯瞰艾于普苏丹海岸线与金角湾全景",
-    "compatible_slots": [
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": "晴",
     "season_months": null
   },
@@ -192,10 +160,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Colorful_Balat_houses.jpg",
     "scene_note": "巴拉特街区色彩缤纷的多层公寓楼，蓝色、橙色、绿色外墙交错排列",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": "晴",
     "season_months": null
   },
@@ -217,10 +182,7 @@
     "license": "PD-self",
     "source": "https://commons.wikimedia.org/wiki/File:Cafe_markiz.JPG",
     "scene_note": "独立大街上马尔基兹糕饼店外观，侍者站在店门前",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   }

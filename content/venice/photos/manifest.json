@@ -6,10 +6,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Campo_Santa_Maria_Formosa_(Venice).jpg",
     "scene_note": "圣母福尔摩萨广场全景，教堂立面与钟楼及周围建筑",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -20,10 +17,7 @@
     "license": "CC BY 2.0",
     "source": "https://commons.wikimedia.org/wiki/File:Basilica_di_San_Marco,_Venice_(30927778316).jpg",
     "scene_note": "圣马可大教堂外观，拜占庭风格立面与马赛克装饰",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -34,10 +28,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:(Venice)_Doge%27s_Palace_facing_the_sea.jpg",
     "scene_note": "总督宫面向大海的立面，哥特式拱廊与粉白色外墙",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -48,10 +39,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Panorama_of_Canal_Grande_and_Ponte_di_Rialto,_Venice_-_September_2017.jpg",
     "scene_note": "大运河与里亚托桥全景，两岸建筑倒映水中",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -62,9 +50,7 @@
     "license": "CC BY 2.0",
     "source": "https://commons.wikimedia.org/wiki/File:Venezia-_Rialto_market_-_50336366728.jpg",
     "scene_note": "里亚托鱼市场，拱廊下的摊位与市集氛围",
-    "compatible_slots": [
-      "上午"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -75,10 +61,7 @@
     "license": "CC BY 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Basilica_Santa_Maria_della_Salute_Dorsoduro_Venezia.jpg",
     "scene_note": "多索杜罗区方向拍摄的安康圣母圣殿全景，巴洛克穹顶与双钟楼",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -89,10 +72,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Accademia_(Venice).jpg",
     "scene_note": "学院美术馆建筑外观",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -103,10 +83,7 @@
     "license": "CC BY 2.0",
     "source": "https://commons.wikimedia.org/wiki/File:Palazzo_Venier_dei_Leoni_(Peggy_Guggenheim_Collection),_Venice_(37100733803).jpg",
     "scene_note": "大运河上远眺韦尼耶·莱奥尼宫，运河视角",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -117,10 +94,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Arsenale_(Venice)_-_The_Lion_of_Venice_on_the_pediment_of_the_arsenal.jpg",
     "scene_note": "威尼斯军械库正门山墙上的飞狮浮雕与入口大门",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -131,10 +105,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:San_Giorgio_Maggiore_with_gondolas.jpg",
     "scene_note": "水面上贡多拉与圣乔治马焦雷岛远景，经典水上教堂视角",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -145,10 +116,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Jewish_Ghetto_of_Venice_2023.jpg",
     "scene_note": "威尼斯犹太隔都区街景，历史街区建筑与广场",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -159,10 +127,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Bridge_of_Sighs_(Ponte_dei_Sospiri),_Venice,_Italy.jpg",
     "scene_note": "叹息桥正面特写，白色封闭廊桥横跨窄运河",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -173,10 +138,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Facade_of_Santa_Maria_Gloriosa_dei_Frari_(Venice).jpg",
     "scene_note": "弗拉里圣母荣耀大教堂正立面，哥特式红砖外墙与圆形窗",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -187,10 +149,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Zattere_al_Ponte_Lungo_vista_dal_Canale_Giudecca.jpg",
     "scene_note": "从朱代卡运河方向远眺扎特雷河岸长堤，沿岸建筑与水面",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -201,10 +160,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Campanile_di_San_Marco_con_Loggia.jpg",
     "scene_note": "圣马可钟楼与底部桑索维诺凉廊，仰拍展现钟楼全貌",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": "晴",
     "season_months": null
   },
@@ -226,10 +182,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Scala_Contarini_del_Bovolo_(Venice).jpg",
     "scene_note": "博沃洛宫外部螺旋楼梯全景，文艺复兴时期的多层拱廊与螺旋结构",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   }

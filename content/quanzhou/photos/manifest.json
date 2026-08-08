@@ -6,10 +6,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:The_courtyard_of_Quanzhou_Kaiyuan_Temple_20170727.jpg",
     "scene_note": "开元寺大雄宝殿及院落，晴天日间拍摄",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": "晴",
     "season_months": null
   },
@@ -20,10 +17,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:20230130_Qingjing_Mosque_01.jpg",
     "scene_note": "清净寺外观，建筑细节清晰",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -34,9 +28,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Luoyang_Bridge,_Quanzhou_(20201001150149).jpg",
     "scene_note": "洛阳桥午后景观，宋代石桥全貌",
-    "compatible_slots": [
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": "晴",
     "season_months": null
   },
@@ -47,10 +39,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Quanzhou_-_Tianhou_Gong_-_DSCF8659.JPG",
     "scene_note": "天后宫妈祖庙外观，有古代赑屃石碑",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": "晴",
     "season_months": null
   },
@@ -61,10 +50,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:20230130_West_Street,_Quanzhou.jpg",
     "scene_note": "西街俯瞰，老城区街道全貌",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -75,10 +61,7 @@
     "license": "CC0 1.0",
     "source": "https://commons.wikimedia.org/wiki/File:Xunpu_Village_1.jpg",
     "scene_note": "蟳埔村景观，渔村风貌",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -89,10 +72,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Quanzhou_Confucian_Temple_Dacheng_Hall_2019_(2).jpg",
     "scene_note": "泉州府文庙大成殿外观，广角展示殿堂建筑",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -103,10 +83,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Quanzhou_Qingyuan_Shan_20120301-08.jpg",
     "scene_note": "清源山老君岩石雕造像，山间环境",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -117,10 +94,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Quanzhou_Maritime_Museum_Front_View.jpg",
     "scene_note": "泉州海外交通史博物馆正面外观",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -131,10 +105,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Quanzhou_Tonghuai_Guanyue_Miao_20120229-01.jpg",
     "scene_note": "通淮关岳庙外观",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -145,10 +116,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Anping_Bridge_-_seen_from_Shuitou_-_DSCF8934.JPG",
     "scene_note": "安平桥西端远眺，古石桥跨水全貌",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -159,10 +127,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Jinjiang_Cao%27an_20120229-05.jpg",
     "scene_note": "草庵摩尼教遗址外观，世界仅存摩尼教寺庙",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -173,10 +138,7 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:%E6%B3%89%E5%B7%9E%E9%AA%91%E6%A5%BC.jpeg",
     "scene_note": "泉州中山路骑楼建筑，红色传统风格",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   },
@@ -187,10 +149,7 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Xunpu_Tianhou_Palace_04_2025-08.jpg",
     "scene_note": "蟳埔顺济宫山门南面",
-    "compatible_slots": [
-      "上午",
-      "午后"
-    ],
+    "compatible_slots": null,
     "weather_hint": null,
     "season_months": null
   }
